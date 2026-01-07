@@ -13,18 +13,6 @@ permissions:
   realestate.admin:
     description: Open the admin manage menu
     default: op
-  notes.others:
-    description: Check other players' notes
-    default: op
-  invisibleitemframes.use:
-    description: Invisible item frames command
-    default: op
-  invisibleitemframes.glow:
-    description: Invisible item frames glow command
-    default: op
-  invisibleitemframes.toggle:
-    description: Invisible item frames toggle command
-    default: op
 depend:
   - WorldGuard
   - DiscordSRV
