@@ -11,10 +11,24 @@ import org.bukkit.inventory.Inventory;
 import java.text.DecimalFormat;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Utils {
 
+    private final static Pattern HEX_PATTERN = Pattern.compile("\\{#([A-Fa-f0-9]){6}}");
+
     public static String color(String s) {
+        if (s == null || s.trim().isEmpty()) return "";
+
+        Matcher matcher = HEX_PATTERN.matcher(s);
+
+        while (matcher.find()) {
+            String hexString = matcher.group();
+            hexString = hexString.substring(1, hexString.length() - 1);
+            s = s.substring(0, matcher.start()) + ChatColor.valueOf(hexString) + s.substring(matcher.end());
+            matcher = HEX_PATTERN.matcher(s);
+        }
         return ChatColor.translateAlternateColorCodes('&', s);
     }
 
