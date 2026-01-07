@@ -53,8 +53,6 @@ public abstract class EState {
     public Claim getClaim() {
         Claim claim = griefPrevention.getClaim(this.parentID);
         Claim subClaim = claim.children.stream().filter(x -> x.getID().equals(this.claimID)).findFirst().orElse(null);
-        RealEstate.getInstance().getLogger().info("SubClaim: " + subClaim);
-        RealEstate.getInstance().getLogger().info("Claim: " + claim);
         if (subClaim != null) return subClaim;
 
         return claim;
