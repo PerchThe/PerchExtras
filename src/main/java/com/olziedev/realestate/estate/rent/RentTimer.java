@@ -8,6 +8,7 @@ import com.olziedev.realestate.player.EStatePlayer;
 import com.olziedev.realestate.utils.Configuration;
 import com.olziedev.realestate.utils.Utils;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Date;
@@ -76,6 +77,13 @@ public class RentTimer extends BukkitRunnable {
                 Bukkit.getScheduler().runTask(RealEstate.getInstance().plugin, () -> {
                     Utils.sortInventory(estate.getRenter());
                     Utils.sortInventory(estate.getOwner());
+                    try {
+                        estate.setRenter(-1, null, null);
+                    } catch (Exception e) {
+                        Location loc = estate.getSignLocation();
+                        String location = String.format("(%s) %s, %s, %s", loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+                        manager.plugin.getLogger().error("Invalid Renting Location: " +  location);
+                    }
                     estate.setRenter(-1, null, null); // remove the renter?
                 });
                 continue;
