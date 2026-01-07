@@ -1,0 +1,33 @@
+name: ${project.name}
+main: com.olziedev.spotextras.SpotExtras
+version: ${project.version}
+author: Olzie
+api-version: 1.13
+permissions:
+  antibackteleport.command:
+    description: Antiback teleport command
+    default: op
+  potion.command.milk:
+    description: Use the milk command
+    default: op
+  realestate.admin:
+    description: Open the admin manage menu
+    default: op
+  notes.others:
+    description: Check other players' notes
+    default: op
+  invisibleitemframes.use:
+    description: Invisible item frames command
+    default: op
+  invisibleitemframes.glow:
+    description: Invisible item frames glow command
+    default: op
+  invisibleitemframes.toggle:
+    description: Invisible item frames toggle command
+    default: op
+depend:
+  - WorldGuard
+  - DiscordSRV
+  - Essentials
+  - Vault
+  - GriefPrevention

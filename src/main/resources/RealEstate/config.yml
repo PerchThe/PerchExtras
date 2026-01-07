@@ -1,0 +1,112 @@
+settings:
+  lines-sell:
+    - "[sell]"
+    - "%price%"
+    - ""
+    - ""
+  lines-sell-finished:
+    - "&a&lFor sell"
+    - "&a$%price%"
+    - "&7%player%"
+    - "&f%size% claim"
+  # These are the needed flags that need to be on signs for it to add renew mode or nice mode.
+  lines-rent-flags:
+    # For renew mode.
+    renew: "-r"
+    # Show in %flags% the flags that are on the sign.
+    renew-display: "&cAuto Renew"
+    # For the nice mode.
+    nicemode: "-nm"
+    # Show in %flags% the flags that are on the sign.
+    nicemode-display: "&aNice Mode"
+
+  lines-rent:
+    - "[rent]"
+    - "%time%"
+    - "%price%"
+    - "%flags%"
+  # You can use a %size% variable to show how big the claim is.
+  # Not sure how you can fit that though
+  lines-rent-finished:
+    - "&a&lFor rent"
+    - "&7$%price%/%time%"
+    - "&7Player (%flags%):"
+    - "&7%player%"
+  lines-rent-renting:
+    - "&c[Rented]"
+    - "&7%end%"
+    - "&7$%price%/%time%"
+    - "&7%player%"
+  lines-hold-renting:
+    - "&c[Hold]"
+    - "&7Since: %end%"
+    - "&7$%price%/%time%"
+    - "&7%player%"
+  times:
+    s:
+      - seconds
+      - second
+      - secs
+      - sec
+    m:
+      - minutes
+      - minute
+      - mins
+      - min
+      - mi
+    h:
+      - hours
+      - hour
+      - hrs
+      - hr
+      - h
+    d:
+      - days
+      - day
+      - d
+    M:
+      - months
+      - month
+      - mon
+      - mo
+  select-sign:
+    # What are the premade lines in the sign? %search% is the variable they have to enter the amount in.
+    lines:
+      - "%search%"
+      - "Enter how"
+      - "many cycles"
+      - "($%price%)"
+    # With servers using 1.12 and below can experience flashing when open the sign. If you're experiencing this please have it enabled.
+    # If you experience the sign opening and close, please disable this.
+    fix-old-flashing: false
+
+lang:
+  already-estate: "&cThere is already an estate here!"
+  player-only: "&cYou must be a player to perform this command!"
+  placed-estate: "&aSuccessfully placed an estate here!"
+  broke-estate: "&aSuccessfully broken your estate sign!"
+  cannot-buy: "&cYou cannot buy your own claim, break your sign if you want to remove it."
+  not-enough-buy: "&cSorry, but you do not have $%price% to buy this claim!"
+  not-enough-rent: "&cSorry, but you do not have $%price% to rent this claim!"
+  successfully-bought: "&aYou successfully bought this claim, its now yours!"
+  successfully-bought-other: "&a%player% has just bought your claim located at: %location% for %price%"
+  successfully-rented: "&aYou successfully started to rent this claim, its now yours!"
+  successfully-rented-other: "&a%player% has just started to rent your claim located at: %location% for $%price%"
+  cannot-break: "&cYou cannot break this sign, only %owner% can break this!"
+  cannot-break-rent: "&cYou cannot break this sign, %player% is currently renting this!"
+  cannot-rent: "&cYou cannot rent this claim, its already rented by %player%!"
+  modify-claim: "&cYou cannot modify this claim as it has an estate sign in it!"
+  disabled-coimmand: "&cYou cannot use this command at the moment, its disabled as you have a renting/sell sign."
+  not-a-number: "&cThat is not a number!"
+  successfully-unrented: "&aYou successfully unrented this claim, you paid for the full cycle."
+  successfully-ended: "&aYou've now been refunded for your pre-paid cycles and the rent will now end in the next cycle."
+  extended-rent: "&aSuccessfully extended your rent by %cycle% cycles!"
+  dismissed: "&aYou have successfully dismissed your reminders!"
+  successfully-ended-owner: "&aThe rent will now end in the next cycle."
+  reminder: "&aYou currently only have one rent cycle left with %player% make sure purchase more cycles at %location%!"
+  rent-ended: "&a%player%'s rent has just ended at one of your estates %location%"
+  rent-renewed: "&a%player%'s rent has just renewed at one of your estates %location%"
+  rent-ended-other: "&aYour rent with %player% has just ended!"
+  rent-renewed-other: "&aYour rent with %player% has just renewed!"
+  rent-hold: "&a%player%'s rent has just ended and is now on hold %location%"
+  rent-hold-other: "&aYour rent with %player% has been put on hold!"

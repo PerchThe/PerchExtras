@@ -1,0 +1,12 @@
+settings:
+  # This is the time a player needs to be inactive to receive their inactive role. (This is measured in milliseconds)
+  # Below is 2 days in milliseconds.
+  inactive-time: 172800000
+
+# I suggest you list these from the highest role to the lowest role.
+roles:
+  1:
+    # This is the role ID for the rank role.
+    role: 333210659628122122
+    # This is the role ID for the inactive rank role.
+    inactive-role: 333210659628122122

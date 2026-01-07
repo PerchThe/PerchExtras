@@ -1,0 +1,83 @@
+settings:
+  # Here all are the valid potions a player can toggle.
+  # The permission per potion is "potion.command.<potion name>" for example "potion.command.SPEED"
+  # Please use the potion names from here:
+  potions:
+    SPEED:
+      command: "speed"
+      name: "speed"
+    SLOW:
+      command: "slowness"
+      name: "slowness"
+    FAST_DIGGING:
+      command: "haste"
+      name: "haste"
+    SLOW_DIGGING:
+      command: "miningfatigue"
+      name: "mining fatigue"
+    INCREASE_DAMAGE:
+      command: "strength"
+      name: "strength"
+    JUMP:
+      command: "jumpboost"
+      name: "jump boost"
+    CONFUSION:
+      command: "nausea"
+      name: "nausea"
+    REGENERATION:
+      command: "regeneration"
+      name: "regeneration"
+    DAMAGE_RESISTANCE:
+      command: "resistance"
+      name: "resistance"
+    FIRE_RESISTANCE:
+      command: "fireresistance"
+      name: "fire resistance"
+    WATER_BREATHING:
+      command: "waterbreathing"
+      name: "water breathing"
+    INVISIBILITY:
+      command: "invisibility"
+      name: "invisibility"
+    BLINDNESS:
+      command: "blindness"
+      name: "blindness"
+    NIGHT_VISION:
+      command: "nightvision"
+      name: "nightvision"
+    HUNGER:
+      command: "hunger"
+      name: "hunger"
+    WEAKNESS:
+      command: "weakness"
+      name: "weakness"
+    POISON:
+      command: "poison"
+      name: "poison"
+    WITHER:
+      command: "wither"
+      name: "wither"
+    HEALTH_BOOST:
+      command: "healthboost"
+      name: "health boost"
+    LEVITATION:
+      command: "levitation"
+      name: "levitation"
+    LUCK:
+      command: "luck"
+      name: "luck"
+    SLOW_FALLING:
+      command: "slowfalling"
+      name: "slow falling"
+    CONDUIT_POWER:
+      command: "conduitpower"
+      name: "conduit power"
+    DOLPHINS_GRACE:
+      command: "dolphinsgrace"
+      name: "dolphin's grace"
+
+lang:
+  milk-command: "&aSuccessfully disabled all your potions!"
+  enabled: "&aSuccessfully enabled the %potion% effect permanently!"
+  disabled: "&aSuccessfully disabled the %potion% effect"
+  no-limit-permission: "&cYou don't have permission to use this command!"

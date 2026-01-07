@@ -1,0 +1,13 @@
+settings:
+  page-length: 10
+
+lang:
+  no-permission: "&cYou do not have permission to perform this command!"
+  player-only: "&cYou must be a player to perform this command!"
+  added-note: "Successfully added the note!"
+  not-a-number: "&cThe note must be a number!"
+  no-player-joined: "&cNo player joined the game!"
+  notes-header: "&7------------- &bNotes &7-------------"
+  notes-entry: "%id% &7- &b%note%"
+  notes-footer: "&7------------- &bNotes &7-------------"
+  no-page: "&cNo page found!"

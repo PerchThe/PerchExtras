@@ -1,0 +1,10 @@
+lang:
+  no-permission: "&cYou do not have permission to perform this command!"
+  no-player-joined: "&cThat player isn't online or exists!"
+  invalid-location-format: "&cThat location format isn't valid!"
+  invalid-world: "&cThat world doesn't exist!"
+  teleport: "Successfully teleported %player% to that location"
+  command-format: "&4&lINCORRECT USAGE\n&c/%cmd% <player> <world name> <x> <y> <y> [yaw] [pitch]"
+  regionplayers-format: "&4&lINCORRECT USAGE\n&c/executeconsolecommandonplayersinsideregion <world> <region> <command>"
+  world-not-found: "&cThat world doesn't exist!"
+  region-error: "&cThere was an error while grabbing the region! Does the region exist?"
