@@ -15,7 +15,6 @@ permissions:
     default: op
 depend:
   - WorldGuard
-  - DiscordSRV
   - Essentials
   - Vault
   - GriefPrevention
