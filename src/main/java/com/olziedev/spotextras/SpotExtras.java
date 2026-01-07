@@ -1,7 +1,6 @@
 package com.olziedev.spotextras;
 
 import com.olziedev.antibackteleport.AntiBackTeleport;
-import com.olziedev.inactivediscordroles.InactiveDiscordRoles;
 import com.olziedev.potion.Potion;
 import com.olziedev.realestate.RealEstate;
 import com.olziedev.spotextras.api.SpotPlugin;
@@ -21,7 +20,7 @@ public class SpotExtras extends JavaPlugin {
     public void onEnable() {
         plugins = new ArrayList<>();
         instance = this;
-        plugins.addAll(Arrays.asList(new RealEstate(), new Potion(), new InactiveDiscordRoles(), new AntiBackTeleport()));
+        plugins.addAll(Arrays.asList(new RealEstate(), new Potion(), new AntiBackTeleport()));
         for (SpotPlugin plugin : plugins) {
             try {
                 this.getLogger().info("Enabling " + plugin.getName());
