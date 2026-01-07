@@ -1,6 +1,6 @@
-name: ${project.name}
+name: PerchExtras
 main: com.olziedev.spotextras.SpotExtras
-version: ${project.version}
+version: ${version}
 author: Olzie
 api-version: 1.13
 permissions:
