@@ -4,18 +4,20 @@ import com.olziedev.olziecommand.v1_3_3.framework.CommandExecutor;
 import com.olziedev.olziecommand.v1_3_3.framework.ExecutorType;
 import com.olziedev.olziecommand.v1_3_3.framework.api.FrameworkCommand;
 import com.olziedev.potion.Potion;
-import com.olziedev.potion.managers.DatabaseManager;
-import com.olziedev.potion.player.PotionPlayer;
 import com.olziedev.potion.utils.Configuration;
 import com.olziedev.potion.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-public class PotionCommand extends FrameworkCommand {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-    private final DatabaseManager manager = Potion.getDatabaseManager();
+public class PotionCommand extends FrameworkCommand {
 
     private final PotionEffectType potionType;
 
@@ -28,21 +30,52 @@ public class PotionCommand extends FrameworkCommand {
     @Override
     public void onExecute(CommandExecutor cmd) {
         Player player = (Player) cmd.getSender();
-        PotionPlayer potionPlayer = manager.getPlayer(player.getUniqueId());
-        if (player.hasPotionEffect(potionType)) {
-            Bukkit.getScheduler().runTask(plugin, () -> player.removePotionEffect(potionType));
-            potionPlayer.remove(potionType);
-            Utils.sendMessage(player, Configuration.getString(Configuration.getConfig(), "lang.disabled").replace("%potion%", this.getPotionName()));
+        PersistentDataContainer pdc = player.getPersistentDataContainer();
+        List<String> savedPotions = new ArrayList<>();
+        if (pdc.has(Potion.POTION_KEY, PersistentDataType.STRING)) {
+            String stored = pdc.get(Potion.POTION_KEY, PersistentDataType.STRING);
+            if (stored != null && !stored.isEmpty()) {
+                savedPotions.addAll(Arrays.asList(stored.split(",")));
+            }
+        }
+
+        if (player.hasPotionEffect(potionType) || savedPotions.contains(potionType.getName())) {
+
+            Bukkit.getScheduler().runTask(Potion.getInstance().getPlugin(), () -> player.removePotionEffect(potionType));
+            savedPotions.remove(potionType.getName());
+            updatePDC(player, savedPotions);
+
+            Utils.sendMessage(player, Configuration.getString(Configuration.getConfig(), "lang.disabled")
+                    .replace("%potion%", this.getPotionName()));
             return;
         }
-        PotionEffect effect = potionPlayer.createEffect(potionType);
+
+        PotionEffect effect = Potion.createEffect(player, potionType);
+
         if (effect == null) {
             Utils.sendMessage(player, Configuration.getString(Configuration.getConfig(), "lang.no-limit-permission"));
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> player.addPotionEffect(effect));
-        potionPlayer.add(potionType);
-        Utils.sendMessage(player, Configuration.getString(Configuration.getConfig(), "lang.enabled").replace("%potion%", this.getPotionName()));
+
+        Bukkit.getScheduler().runTask(Potion.getInstance().getPlugin(), () -> player.addPotionEffect(effect));
+
+        if (!savedPotions.contains(potionType.getName())) {
+            savedPotions.add(potionType.getName());
+        }
+
+        updatePDC(player, savedPotions);
+
+        Utils.sendMessage(player, Configuration.getString(Configuration.getConfig(), "lang.enabled")
+                .replace("%potion%", this.getPotionName()));
+    }
+
+    private void updatePDC(Player player, List<String> potions) {
+        if (potions.isEmpty()) {
+            player.getPersistentDataContainer().remove(Potion.POTION_KEY);
+        } else {
+            String data = String.join(",", potions);
+            player.getPersistentDataContainer().set(Potion.POTION_KEY, PersistentDataType.STRING, data);
+        }
     }
 
     public String getPotionName() {

@@ -5,13 +5,18 @@ import com.olziedev.olziecommand.v1_3_3.framework.action.CommandActionType;
 import com.olziedev.olziecommand.v1_3_3.framework.api.FrameworkCommand;
 import com.olziedev.potion.commands.MilkCommand;
 import com.olziedev.potion.commands.PotionCommand;
-import com.olziedev.potion.events.JoinEvent;
-import com.olziedev.potion.managers.DatabaseManager;
+import com.olziedev.potion.listeners.PotionListener;
 import com.olziedev.potion.utils.Configuration;
 import com.olziedev.potion.utils.Utils;
 import com.olziedev.spotextras.api.SpotPlugin;
+import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachmentInfo;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
@@ -22,7 +27,7 @@ public class Potion extends SpotPlugin {
 
     private static Potion instance = null;
 
-    private DatabaseManager databaseManager;
+    public static NamespacedKey POTION_KEY;
 
     @Override
     public String getName() {
@@ -32,17 +37,16 @@ public class Potion extends SpotPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        new Configuration(this).load(); // load all the configuration files in memory
-
-        this.databaseManager = new DatabaseManager(this);
-        this.databaseManager.setup();
-        this.databaseManager.load();
+        POTION_KEY = new NamespacedKey(this.plugin, "saved_potions");
+        new Configuration(this).load();
+        Bukkit.getPluginManager().registerEvents(new PotionListener(), this.plugin);
 
         OlzieCommand olzieCommand = new OlzieCommand(this.plugin, getClass())
                 .getActionRegister()
                 .registerAction(CommandActionType.CMD_NO_PERMISSION, cmd -> {
                     Utils.sendMessage(cmd.getSender(), Configuration.getConfig().getString("lang.no-permission"));
                 }).buildActions();
+
         List<FrameworkCommand> commands = new ArrayList<>();
         commands.add(new MilkCommand());
 
@@ -54,17 +58,12 @@ public class Potion extends SpotPlugin {
                 continue;
             }
             commands.add(new PotionCommand(potionType, section.getString(s + ".command")));
-            databaseManager.getPotions().put(potionType.getName(), potionType);
         }
         olzieCommand.registerCommands(commands);
-        Bukkit.getPluginManager().registerEvents(new JoinEvent(), this.plugin);
     }
 
     @Override
     public void onDisable() {
-        this.databaseManager.close();
-        this.databaseManager = null;
-
         Bukkit.getScheduler().cancelTasks(this.plugin);
         instance = null;
     }
@@ -73,7 +72,27 @@ public class Potion extends SpotPlugin {
         return instance;
     }
 
-    public static DatabaseManager getDatabaseManager() {
-        return instance.databaseManager;
+    public JavaPlugin getPlugin() {
+        return (JavaPlugin) this.plugin;
+    }
+
+    public static PotionEffect createEffect(Player player, PotionEffectType effect) {
+        List<Integer> limits = new ArrayList<>();
+        if (player != null) player.recalculatePermissions();
+
+        String permPrefix = "potion." + effect.getName().toLowerCase() + ".";
+
+        for (PermissionAttachmentInfo perms : player == null ? Collections.<PermissionAttachmentInfo>emptyList() : player.getEffectivePermissions()) {
+            if (!perms.getPermission().startsWith(permPrefix)) continue;
+
+            String[] value = perms.getPermission().split(permPrefix);
+            if (value.length > 1 && NumberUtils.isDigits(value[1])) {
+                limits.add(Integer.parseInt(value[1]));
+            }
+        }
+
+        if (limits.isEmpty()) return null;
+
+        return new PotionEffect(effect, Integer.MAX_VALUE, Collections.max(limits), false, false);
     }
 }
