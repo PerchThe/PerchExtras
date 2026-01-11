@@ -1,8 +1,8 @@
 package com.olziedev.realestate.utils;
 
 import com.olziedev.olziemenu.framework.menu.FrameworkMenu;
+import net.md_5.bungee.api.ChatColor; // CHANGED: Use Bungee API for Hex support
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 
 public class Utils {
 
+    // Matches formats like {#ffffff}
     private final static Pattern HEX_PATTERN = Pattern.compile("\\{#([A-Fa-f0-9]){6}}");
 
     public static String color(String s) {
@@ -25,8 +26,12 @@ public class Utils {
 
         while (matcher.find()) {
             String hexString = matcher.group();
+            // Extracts "#fec300" from "{#fec300}"
             hexString = hexString.substring(1, hexString.length() - 1);
-            s = s.substring(0, matcher.start()) + ChatColor.valueOf(hexString) + s.substring(matcher.end());
+
+            // CHANGED: Use ChatColor.of() for Hex colors. valueOf() causes the crash.
+            s = s.substring(0, matcher.start()) + ChatColor.of(hexString) + s.substring(matcher.end());
+
             matcher = HEX_PATTERN.matcher(s);
         }
         return ChatColor.translateAlternateColorCodes('&', s);
@@ -55,18 +60,18 @@ public class Utils {
         switch (timestr.charAt(timestr.length() - 1)) {
             case 'M':
                 multiplier *= 4;
-            case 'W':    
+            case 'W':
             case 'w':
                 multiplier *= 7;
             case 'D':
             case 'd':
                 multiplier *= 24;
-            case 'H':    
+            case 'H':
             case 'h':
                 multiplier *= 60;
             case 'm':
                 multiplier *= 60;
-            case 'S':    
+            case 'S':
             case 's':
                 timestr = timestr.substring(0, timestr.length() - 1);
             default:

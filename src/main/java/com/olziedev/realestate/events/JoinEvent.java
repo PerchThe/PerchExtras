@@ -7,6 +7,7 @@ import com.olziedev.realestate.player.EStatePlayer;
 import com.olziedev.realestate.utils.Configuration;
 import com.olziedev.realestate.utils.Utils;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -27,6 +28,8 @@ public class JoinEvent implements Listener {
         Player player = event.getPlayer();
         EStatePlayer eStatePlayer = manager.getPlayer(event.getPlayer().getUniqueId());
 
+        if (eStatePlayer == null) return;
+
         for (String message : new ArrayList<>(eStatePlayer.getMessages())) {
             Utils.sendMessage(player, message);
             eStatePlayer.manageMessage(message, false);
@@ -38,7 +41,16 @@ public class JoinEvent implements Listener {
             RentingEstate rentingEstate = manager.getEState(reminders, RentingEstate.class);
             if (rentingEstate == null) continue;
 
-            Utils.sendMessage(player, Configuration.getConfig().getString("lang.reminder").replace("%player%", Bukkit.getOfflinePlayer(rentingEstate.getOwner()).getName()).replace("%location%", Utils.locationString(rentingEstate.getSignLocation())).replace("%price%", Utils.formatNumber(rentingEstate.getPrice())));
+            OfflinePlayer owner = Bukkit.getOfflinePlayer(rentingEstate.getOwner());
+            String ownerName = owner.getName();
+            if (ownerName == null) {
+                ownerName = "Unknown";
+            }
+
+            Utils.sendMessage(player, Configuration.getConfig().getString("lang.reminder")
+                    .replace("%player%", ownerName)
+                    .replace("%location%", Utils.locationString(rentingEstate.getSignLocation()))
+                    .replace("%price%", Utils.formatNumber(rentingEstate.getPrice())));
         }
     }
 }

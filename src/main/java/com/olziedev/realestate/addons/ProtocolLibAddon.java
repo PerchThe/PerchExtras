@@ -20,6 +20,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -37,37 +38,55 @@ public class ProtocolLibAddon extends Addon {
 
     @Override
     public void load() {
-        inputReceivers = new HashMap<>();
-        ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(this.plugin.plugin, PacketType.Play.Client.UPDATE_SIGN) {
-            @Override
-            public void onPacketReceiving(PacketEvent event) {
-                Player player = event.getPlayer();
-                if (player == null) return; // apparently player can be null now wtf?
+        // This is YOUR plugin (PerchExtras). We use this for schedulers.
+        Plugin javaPlugin = this.plugin.plugin;
 
-                SignEditor menu = inputReceivers.remove(player.getUniqueId());
-                if (menu == null) return;
+        // FIX: We fetch the ProtocolLib plugin instance.
+        // Registering the listener as "ProtocolLib" forces it to skip the
+        // dependency cycle check that is causing the crash.
+        Plugin protocolLibPlugin = Bukkit.getPluginManager().getPlugin("ProtocolLib");
 
-                event.setCancelled(true);
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                    boolean success;
-                    try {
-                        success = menu.response.test(event.getPacket().getStringArrays().read(0));
-                    } catch (FieldAccessException ex) {
-                        success = menu.response.test(Arrays.stream(event.getPacket().getChatComponentArrays().read(0)).map(x -> TextComponent.toLegacyText(ComponentSerializer.parse(x.getJson()))).toArray(String[]::new));
-                    }
-                    if (!success) Bukkit.getScheduler().runTaskLater(plugin, () -> menu.open(player, menu.fixFlashing), 2L);
+        // We still run the setup task on your plugin's scheduler
+        Bukkit.getScheduler().runTask(javaPlugin, () -> {
+            inputReceivers = new HashMap<>();
 
-                    PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.BLOCK_CHANGE);
+            // FIX: Register the listener under 'protocolLibPlugin' to bypass verification.
+            ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(protocolLibPlugin, PacketType.Play.Client.UPDATE_SIGN) {
+                @Override
+                public void onPacketReceiving(PacketEvent event) {
+                    Player player = event.getPlayer();
+                    if (player == null) return;
 
-                    packet.getBlockPositionModifier().write(0, menu.position);
-                    packet.getBlockData().write(0, WrappedBlockData.createData(menu.block.getType()));
-                    try {
-                        ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
-                    } catch (InvocationTargetException ex) {
-                        ex.printStackTrace();
-                    }
-                });
-            }
+                    SignEditor menu = inputReceivers.remove(player.getUniqueId());
+                    if (menu == null) return;
+
+                    event.setCancelled(true);
+
+                    // IMPORTANCE: We MUST run the logic on 'javaPlugin' (PerchExtras).
+                    // If we run this on ProtocolLib, and you reload PerchExtras, this task
+                    // would keep running and cause memory leaks.
+                    Bukkit.getScheduler().runTaskAsynchronously(javaPlugin, () -> {
+                        boolean success;
+                        try {
+                            success = menu.response.test(event.getPacket().getStringArrays().read(0));
+                        } catch (FieldAccessException ex) {
+                            success = menu.response.test(Arrays.stream(event.getPacket().getChatComponentArrays().read(0)).map(x -> TextComponent.toLegacyText(ComponentSerializer.parse(x.getJson()))).toArray(String[]::new));
+                        }
+
+                        if (!success) Bukkit.getScheduler().runTaskLater(javaPlugin, () -> menu.open(player, menu.fixFlashing), 2L);
+
+                        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.BLOCK_CHANGE);
+
+                        packet.getBlockPositionModifier().write(0, menu.position);
+                        packet.getBlockData().write(0, WrappedBlockData.createData(menu.block.getType()));
+                        try {
+                            ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+                        } catch (InvocationTargetException ex) {
+                            ex.printStackTrace();
+                        }
+                    });
+                }
+            });
         });
     }
 

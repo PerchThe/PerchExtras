@@ -15,6 +15,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
+// GRIEFPREVENTION IMPORTS
+import me.ryanhamshire.GriefPrevention.GriefPrevention;
+import me.ryanhamshire.GriefPrevention.PlayerData;
+import me.ryanhamshire.GriefPrevention.Claim;
+
 public class BuyEstateMenu extends Menu {
 
     public BuyEstateMenu(Manager manager) {
@@ -32,6 +37,19 @@ public class BuyEstateMenu extends Menu {
 
             ConfigurationSection section = this.getSection().getConfigurationSection("clickable-items");
             if (event.getSlot() == section.getInt("buy.slot", -1)) {
+
+                Claim claim = eState.getClaim();
+                if (claim != null) {
+                    PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+                    int claimCost = claim.getArea();
+
+                    if (playerData.getRemainingClaimBlocks() < claimCost) {
+
+                        Utils.sendMessage(player, "&cYou do not have enough claim blocks to buy ownership of this claim.");
+                        return true;
+                    }
+                }
+
                 double price = eState.getPrice();
                 VaultAddon vaultAddon = RealEstate.getAddonManager().getAddon(VaultAddon.class);
                 if (vaultAddon.economyEnabled()) {
