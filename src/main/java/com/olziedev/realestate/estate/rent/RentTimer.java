@@ -37,12 +37,10 @@ public class RentTimer extends BukkitRunnable {
                     estate.setNextTime();
                     estate.setPaidPrice(-1, estate.getRenter());
 
-                    // FIXED: Wrapped getName() in String.valueOf() to prevent NPE
                     manager.getPlayer(estate.getOwner()).manageDismissMessage(Configuration.getConfig().getString("lang.rent-renewed")
                             .replace("%location%", Utils.locationString(estate.getSignLocation()))
                             .replace("%player%", String.valueOf(Bukkit.getOfflinePlayer(estate.getRenter()).getName())), true);
 
-                    // FIXED: Wrapped getName() in String.valueOf() to prevent NPE
                     manager.getPlayer(estate.getRenter()).manageDismissMessage(Configuration.getConfig().getString("lang.rent-renewed-other")
                             .replace("%location%", Utils.locationString(estate.getSignLocation()))
                             .replace("%player%", String.valueOf(Bukkit.getOfflinePlayer(estate.getOwner()).getName())), true);
@@ -57,12 +55,10 @@ public class RentTimer extends BukkitRunnable {
                     manager.plugin.getLogger().info("The rent has been ended, setting it to nice mode.");
                     estate.setHold();
 
-                    // FIXED: Wrapped getName() in String.valueOf() to prevent NPE
                     manager.getPlayer(estate.getOwner()).manageDismissMessage(Configuration.getConfig().getString("lang.rent-hold")
                             .replace("%location%", Utils.locationString(estate.getSignLocation()))
                             .replace("%player%", String.valueOf(Bukkit.getOfflinePlayer(estate.getRenter()).getName())), true);
 
-                    // FIXED: Wrapped getName() in String.valueOf() to prevent NPE
                     manager.getPlayer(estate.getRenter()).manageDismissMessage(Configuration.getConfig().getString("lang.rent-hold-other")
                             .replace("%location%", Utils.locationString(estate.getSignLocation()))
                             .replace("%player%", String.valueOf(Bukkit.getOfflinePlayer(estate.getOwner()).getName())), true);
@@ -75,12 +71,10 @@ public class RentTimer extends BukkitRunnable {
                 }
                 manager.plugin.getLogger().info("The rent has been ended.");
 
-                // FIXED: Wrapped getName() in String.valueOf() to prevent NPE (This was the specific crash line in your logs)
                 manager.getPlayer(estate.getOwner()).manageMessage(Configuration.getConfig().getString("lang.rent-ended")
                         .replace("%location%", Utils.locationString(estate.getSignLocation()))
                         .replace("%player%", String.valueOf(Bukkit.getOfflinePlayer(estate.getRenter()).getName())), true);
 
-                // FIXED: Wrapped getName() in String.valueOf() to prevent NPE
                 manager.getPlayer(estate.getRenter()).manageMessage(Configuration.getConfig().getString("lang.rent-ended-other")
                         .replace("%location%", Utils.locationString(estate.getSignLocation()))
                         .replace("%player%", String.valueOf(Bukkit.getOfflinePlayer(estate.getOwner()).getName())), true);
@@ -91,13 +85,19 @@ public class RentTimer extends BukkitRunnable {
                     Utils.sortInventory(estate.getRenter());
                     Utils.sortInventory(estate.getOwner());
                     try {
+                        // Try to reset the renter logic
                         estate.setRenter(-1, null, null);
                     } catch (Exception e) {
+                        // If this fails (e.g. NullPointerException because the Claim was deleted), we handle it here.
                         Location loc = estate.getSignLocation();
                         String location = String.format("(%s) %s, %s, %s", loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
-                        manager.plugin.getLogger().error("Invalid Renting Location: " +  location);
+
+                        manager.plugin.getLogger().error("Invalid Renting Location (Claim likely deleted/corrupt). Removing from DB to stop errors: " +  location);
+
+                        // FIX: Remove the corrupt estate so it stops crashing the task
+                        estate.remove();
                     }
-                    estate.setRenter(-1, null, null); // remove the renter?
+                    // FIX: Removed the second unsafe call to estate.setRenter(...) that was here
                 });
                 continue;
             }
@@ -111,7 +111,6 @@ public class RentTimer extends BukkitRunnable {
                     reminders.add(estate.getClaimID());
                     eStatePlayer.setReminders(reminders);
 
-                    // FIXED: Wrapped getName() in String.valueOf() to prevent NPE
                     Utils.sendMessage(eStatePlayer.getPlayer(), Configuration.getConfig().getString("lang.reminder")
                             .replace("%player%", String.valueOf(Bukkit.getOfflinePlayer(estate.getOwner()).getName()))
                             .replace("%location%", Utils.locationString(estate.getSignLocation()))

@@ -2,9 +2,12 @@ package com.olziedev.potion.listeners;
 
 import com.olziedev.potion.Potion;
 import org.bukkit.Bukkit;
+import org.bukkit.Material; // Import added
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerItemConsumeEvent; // Import added
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -23,10 +26,20 @@ public class PotionListener implements Listener {
 
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
-
         Bukkit.getScheduler().runTaskLater(Potion.getInstance().getPlugin(), () -> {
             restorePotions(event.getPlayer());
         }, 1L);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onConsume(PlayerItemConsumeEvent event) {
+        if (event.getItem().getType() == Material.MILK_BUCKET) {
+            PersistentDataContainer pdc = event.getPlayer().getPersistentDataContainer();
+
+            if (pdc.has(Potion.POTION_KEY, PersistentDataType.STRING)) {
+                pdc.remove(Potion.POTION_KEY);
+            }
+        }
     }
 
     private void restorePotions(Player player) {
