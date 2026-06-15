@@ -52,14 +52,12 @@ public class GriefPreventionAddon extends Addon {
         boolean eState = RealEstate.getDatabaseManager().getEStates().values().stream().anyMatch(x -> x.getOwner().equals(player.getUniqueId()));
         if (!eState) return;
 
-        switch (pluginCommand.getName()) {
+        // Force lowercase to ensure we catch the command correctly
+        switch (pluginCommand.getName().toLowerCase()) {
             case "abandonallclaims":
                 Utils.sendMessage(player, Configuration.getConfig().getString("lang.disabled-command"));
                 event.setCancelled(true);
-            case "extendclaim":
-            case "expandclaim":
-            case "resizeclaim":
-                event.setCancelled(true);
+                break; // Added missing break statement
         }
     }
 
@@ -75,13 +73,17 @@ public class GriefPreventionAddon extends Addon {
         EState eState = RealEstate.getDatabaseManager().getEState(claim.getID(), EState.class);
         if (eState == null) return;
 
-        switch (pluginCommand.getName()) {
+        // Force lowercase to ensure we catch the command correctly
+        switch (pluginCommand.getName().toLowerCase()) {
             case "abandonclaim":
             case "untrust":
             case "deleteclaim":
             case "extendclaim":
+            case "expandclaim":
+            case "resizeclaim":
                 Utils.sendMessage(player, Configuration.getConfig().getString("lang.modify-claim"));
                 event.setCancelled(true);
+                break;
         }
     }
 }
