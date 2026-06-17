@@ -2,7 +2,7 @@ name: PerchExtras
 main: com.olziedev.spotextras.SpotExtras
 version: ${version}
 author: Olzie
-api-version: 1.13
+api-version: 1.14
 permissions:
   antibackteleport.command:
     description: Antiback teleport command
@@ -18,3 +18,9 @@ depend:
   - Essentials
   - Vault
   - GriefPrevention
+commands:
+  runcommandall:
+    description: Runs a command for all online players.
+    usage: /<command> <command with \$player>
+    permission: perchextras.runcommandall
+    permission-message: §cYou do not have permission to use this command.
