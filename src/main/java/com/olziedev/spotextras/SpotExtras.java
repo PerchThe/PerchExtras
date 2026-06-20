@@ -5,10 +5,14 @@ import com.olziedev.potion.Potion;
 import com.olziedev.realestate.RealEstate;
 import com.olziedev.spotextras.api.SpotPlugin;
 
-
 import com.olziedev.lapis.LapisListener;
-import com.olziedev.lapis.TableManager;
 import com.olziedev.runcommandall.RunAllCommand;
+
+import com.olziedev.hatchturtleeggsfaster.Hatchturtleeggsfaster;
+import com.olziedev.openirondoorsbyhand.Openirondoorsbyhand;
+import com.olziedev.invisibleitemframes.Invisibleitemframes;
+import com.olziedev.openblockedcontainers.Openblockedcontainers;
+import com.olziedev.preventplayersfromgrabbingtoomanyelytras.Preventplayersfromgrabbingtoomanyelytras;
 
 import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,29 +26,37 @@ public class SpotExtras extends JavaPlugin {
     private static SpotExtras instance;
     private List<SpotPlugin> plugins;
 
-    // Lapis tracking variables
     private NamespacedKey lapisKey;
-    private TableManager tableManager;
+    private LapisListener lapisListener; // Replaced TableManager with LapisListener
 
     @Override
     public void onEnable() {
         instance = this;
 
-        // --- 3. INITIALIZE THE LAPIS SYSTEM ---
         this.lapisKey = new NamespacedKey(this, "stored_lapis");
-        this.tableManager = new TableManager();
-        getServer().getPluginManager().registerEvents(new LapisListener(this, tableManager), this);
 
-        // --- 4. INITIALIZE COMMANDS ---
+        // Initialize and register listener directly
+        this.lapisListener = new LapisListener(this);
+        getServer().getPluginManager().registerEvents(lapisListener, this);
+
         if (getCommand("runcommandall") != null) {
             getCommand("runcommandall").setExecutor(new RunAllCommand(this));
         } else {
             getLogger().warning("Could not find 'runcommandall' in plugin.yml!");
         }
 
-        // --- 5. INITIALIZE SPOT MODULES ---
         plugins = new ArrayList<>();
-        plugins.addAll(Arrays.asList(new RealEstate(), new Potion(), new AntiBackTeleport()));
+
+        plugins.addAll(Arrays.asList(
+                new RealEstate(),
+                new Potion(),
+                new AntiBackTeleport(),
+                new Hatchturtleeggsfaster(),
+                new Openirondoorsbyhand(),
+                new Invisibleitemframes(),
+                new Openblockedcontainers(),
+                new Preventplayersfromgrabbingtoomanyelytras()
+        ));
 
         for (SpotPlugin plugin : plugins) {
             try {
@@ -58,7 +70,6 @@ public class SpotExtras extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // 1. Disable Spot Modules
         for (SpotPlugin plugin : plugins) {
             try {
                 this.getLogger().info("Disabling " + plugin.getName());
@@ -68,9 +79,8 @@ public class SpotExtras extends JavaPlugin {
             }
         }
 
-        // 2. Clear the Lapis tables to prevent ghost locks on reload
-        if (tableManager != null) {
-            tableManager.clearAll();
+        if (lapisListener != null) {
+            lapisListener.clearAllLocks();
         }
 
         instance = null;
@@ -80,12 +90,7 @@ public class SpotExtras extends JavaPlugin {
         return instance;
     }
 
-    // --- LAPIS GETTERS ---
     public NamespacedKey getLapisKey() {
         return lapisKey;
-    }
-
-    public TableManager getTableManager() {
-        return tableManager;
     }
 }

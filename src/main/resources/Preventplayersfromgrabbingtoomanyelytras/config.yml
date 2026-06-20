@@ -1,0 +1,10 @@
+settings:
+  enabled-world: "ResourceEnd"
+
+  limits:
+    elytra: 1
+    dragon-head: 1
+
+messages:
+  elytra-limit: "&cYou have reached your monthly limit of {limit} Elytras inside of the Resource End!"
+  head-limit: "&cYou have reached your monthly limit of {limit} Dragon Head inside of the Resource End!"

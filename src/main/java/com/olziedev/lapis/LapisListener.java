@@ -1,14 +1,17 @@
 package com.olziedev.lapis;
 
-import com.olziedev.spotextras.SpotExtras; // This tells the file where your main class is!
+import com.olziedev.spotextras.SpotExtras;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.TileState;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -17,16 +20,17 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class LapisListener implements Listener {
 
-    // 1. We changed LapisPersist to SpotExtras here
     private final SpotExtras plugin;
-    private final TableManager tableManager;
+    private final Set<Location> inUseTables = new HashSet<>();
 
-    // 2. We changed LapisPersist to SpotExtras here as well
-    public LapisListener(SpotExtras plugin, TableManager tableManager) {
+    public LapisListener(SpotExtras plugin) {
         this.plugin = plugin;
-        this.tableManager = tableManager;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -34,21 +38,22 @@ public class LapisListener implements Listener {
         if (event.getInventory().getType() != InventoryType.ENCHANTING) return;
 
         EnchantingInventory inv = (EnchantingInventory) event.getInventory();
-        Location loc = inv.getLocation();
-        if (loc == null) return;
+        if (inv.getLocation() == null) return;
 
-        if (tableManager.isLocked(loc)) {
+        Location loc = inv.getLocation().getBlock().getLocation();
+
+        if (inUseTables.contains(loc)) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("§cSomeone is already using this enchanting table!");
             return;
         }
 
-        tableManager.lock(loc);
+        inUseTables.add(loc);
 
         Block block = loc.getBlock();
         if (block.getState() instanceof TileState tileState) {
             PersistentDataContainer pdc = tileState.getPersistentDataContainer();
-            // Because 'plugin' is now SpotExtras, getLapisKey() will perfectly resolve!
+
             if (pdc.has(plugin.getLapisKey(), PersistentDataType.INTEGER)) {
                 Integer storedAmount = pdc.get(plugin.getLapisKey(), PersistentDataType.INTEGER);
                 if (storedAmount != null && storedAmount > 0) {
@@ -65,8 +70,9 @@ public class LapisListener implements Listener {
         if (event.getInventory().getType() != InventoryType.ENCHANTING) return;
 
         EnchantingInventory inv = (EnchantingInventory) event.getInventory();
-        Location loc = inv.getLocation();
-        if (loc == null) return;
+        if (inv.getLocation() == null) return;
+
+        Location loc = inv.getLocation().getBlock().getLocation();
 
         ItemStack secondarySlot = inv.getSecondary();
         Block block = loc.getBlock();
@@ -83,15 +89,34 @@ public class LapisListener implements Listener {
             }
         }
 
-        tableManager.unlock(loc);
+        inUseTables.remove(loc);
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
-        Block block = event.getBlock();
+        handleTableDestruction(event.getBlock());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        handleExplosionList(event.blockList());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        handleExplosionList(event.blockList());
+    }
+
+    private void handleExplosionList(List<Block> blocks) {
+        for (Block block : blocks) {
+            handleTableDestruction(block);
+        }
+    }
+
+    private void handleTableDestruction(Block block) {
         if (block.getType() != Material.ENCHANTING_TABLE) return;
 
-        tableManager.unlock(block.getLocation());
+        inUseTables.remove(block.getLocation());
 
         if (block.getState() instanceof TileState tileState) {
             PersistentDataContainer pdc = tileState.getPersistentDataContainer();
@@ -102,5 +127,9 @@ public class LapisListener implements Listener {
                 }
             }
         }
+    }
+
+    public void clearAllLocks() {
+        inUseTables.clear();
     }
 }

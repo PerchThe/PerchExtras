@@ -38,7 +38,7 @@ public class PlaceEvent implements Listener {
             case "[sell]":
                 creator = new EStateCreator("sell", event.getPlayer());
                 creator.setPrice(lines.get(creator.getLinesNeeded().indexOf("%price%")));
-                creator.setTime("1s"); // bypass the check in the creator
+                creator.setTime("1s");
                 break;
         }
         if (creator == null) return;
