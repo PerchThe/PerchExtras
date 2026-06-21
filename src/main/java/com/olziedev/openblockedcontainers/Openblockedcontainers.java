@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.block.data.Directional;
@@ -14,6 +15,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.InventoryHolder;
@@ -38,6 +42,7 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
         instance = null;
     }
 
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onContainerInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
@@ -50,6 +55,7 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
         boolean mainHandEmpty = player.getInventory().getItemInMainHand().getType().isAir();
         boolean offHandEmpty = player.getInventory().getItemInOffHand().getType().isAir();
 
+        // 1:1 Vanilla Sneak Parity - If they have ANY item in ANY hand while sneaking, let vanilla handle it
         if (player.isSneaking() && (!mainHandEmpty || !offHandEmpty)) {
             return;
         }
@@ -105,5 +111,44 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
             }
         }
         return false;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        verifyInventory(event);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        verifyInventory(event);
+    }
+
+    private void verifyInventory(InventoryInteractEvent event) {
+        org.bukkit.inventory.Inventory topInv = event.getView().getTopInventory();
+        InventoryHolder holder = topInv.getHolder();
+
+        if (holder instanceof BlockState) {
+            Block block = ((BlockState) holder).getBlock();
+
+            if (!(block.getState() instanceof InventoryHolder)) {
+                cancelAndCloseGhostMenu(event);
+            }
+        } else if (holder instanceof DoubleChest) {
+            DoubleChest dc = (DoubleChest) holder;
+            InventoryHolder left = dc.getLeftSide();
+            InventoryHolder right = dc.getRightSide();
+
+            boolean leftMissing = left instanceof BlockState && !(((BlockState) left).getBlock().getState() instanceof InventoryHolder);
+            boolean rightMissing = right instanceof BlockState && !(((BlockState) right).getBlock().getState() instanceof InventoryHolder);
+
+            if (leftMissing || rightMissing) {
+                cancelAndCloseGhostMenu(event);
+            }
+        }
+    }
+
+    private void cancelAndCloseGhostMenu(InventoryInteractEvent event) {
+        event.setCancelled(true);
+        Bukkit.getScheduler().runTask(this.plugin, () -> event.getWhoClicked().closeInventory());
     }
 }
