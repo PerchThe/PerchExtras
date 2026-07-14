@@ -2,6 +2,7 @@ package com.olziedev.openblockedcontainers;
 
 import com.olziedev.spotextras.api.SpotPlugin;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -15,6 +16,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
@@ -42,6 +48,9 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
         instance = null;
     }
 
+    // ==========================================
+    // CORE INTERACTION LOGIC
+    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onContainerInteract(PlayerInteractEvent event) {
@@ -55,7 +64,6 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
         boolean mainHandEmpty = player.getInventory().getItemInMainHand().getType().isAir();
         boolean offHandEmpty = player.getInventory().getItemInOffHand().getType().isAir();
 
-        // 1:1 Vanilla Sneak Parity - If they have ANY item in ANY hand while sneaking, let vanilla handle it
         if (player.isSneaking() && (!mainHandEmpty || !offHandEmpty)) {
             return;
         }
@@ -113,6 +121,10 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
         return false;
     }
 
+    // ==========================================
+    // DUPE PATCH LOGIC (GHOST MENU PREVENTION)
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
         verifyInventory(event);
@@ -129,7 +141,6 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
 
         if (holder instanceof BlockState) {
             Block block = ((BlockState) holder).getBlock();
-
             if (!(block.getState() instanceof InventoryHolder)) {
                 cancelAndCloseGhostMenu(event);
             }
@@ -150,5 +161,77 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
     private void cancelAndCloseGhostMenu(InventoryInteractEvent event) {
         event.setCancelled(true);
         Bukkit.getScheduler().runTask(this.plugin, () -> event.getWhoClicked().closeInventory());
+    }
+
+    // ==========================================
+    // REDSTONE LOADER/UNLOADER MACHINE PATCH
+    // ==========================================
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        for (Block block : event.getBlocks()) {
+            if (block.getState() instanceof InventoryHolder) {
+                closeGhostMenusLoc(block.getLocation());
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        for (Block block : event.getBlocks()) {
+            if (block.getState() instanceof InventoryHolder) {
+                closeGhostMenusLoc(block.getLocation());
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockBreak(BlockBreakEvent event) {
+        if (event.getBlock().getState() instanceof InventoryHolder) {
+            closeGhostMenusLoc(event.getBlock().getLocation());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        for (Block block : event.blockList()) {
+            if (block.getState() instanceof InventoryHolder) {
+                closeGhostMenusLoc(block.getLocation());
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        for (Block block : event.blockList()) {
+            if (block.getState() instanceof InventoryHolder) {
+                closeGhostMenusLoc(block.getLocation());
+            }
+        }
+    }
+
+    /**
+     * Instantly forces the inventory shut for anyone looking at a block that was just
+     * moved, broken, exploded, or replaced by a machine.
+     */
+    private void closeGhostMenusLoc(Location loc) {
+        // Run on the very next server tick to safely close the UI without causing Concurrent Modification exceptions
+        Bukkit.getScheduler().runTask(this.plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                org.bukkit.inventory.Inventory topInv = player.getOpenInventory().getTopInventory();
+
+                // If they have a block inventory open (like a Shulker Box)
+                if (topInv != null && topInv.getLocation() != null) {
+
+                    // If the inventory they are looking at matches the block that was just broken/moved
+                    if (topInv.getLocation().getBlockX() == loc.getBlockX() &&
+                            topInv.getLocation().getBlockY() == loc.getBlockY() &&
+                            topInv.getLocation().getBlockZ() == loc.getBlockZ()) {
+
+                        player.closeInventory();
+                    }
+                }
+            }
+        });
     }
 }
