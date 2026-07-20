@@ -17,7 +17,7 @@ import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.block.Container;
 
 public class Invisibleitemframes extends SpotPlugin implements Listener {
 
@@ -103,8 +103,8 @@ public class Invisibleitemframes extends SpotPlugin implements Listener {
             player.openInventory(player.getEnderChest());
             player.playSound(attachedBlock.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 1.0f, 1.0f);
         }
-        else if (attachedBlock.getState() instanceof InventoryHolder) {
-            player.openInventory(((InventoryHolder) attachedBlock.getState()).getInventory());
+        else if (attachedBlock.getState() instanceof Container) {
+            player.openInventory(((Container) attachedBlock.getState()).getInventory());
 
             // Just a little polish: Added the barrel open sound to match your Ender Chest logic!
             if (attachedBlock.getType().name().contains("BARREL")) {
