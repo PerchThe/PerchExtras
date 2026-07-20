@@ -20,6 +20,8 @@ import org.bukkit.inventory.EquipmentSlot;
 
 public class Openirondoorsbyhand extends SpotPlugin implements Listener {
 
+    private static final String IRON_DOOR_PERMISSION = "evergreen.openirondoors";
+    private static final String IRON_TRAPDOOR_PERMISSION = "evergreen.openirontrapdoors";
     private static Openirondoorsbyhand instance = null;
 
     @Override
@@ -41,6 +43,7 @@ public class Openirondoorsbyhand extends SpotPlugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onDoorInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
 
         Block block = event.getClickedBlock();
         if (block == null) return;
@@ -49,6 +52,10 @@ public class Openirondoorsbyhand extends SpotPlugin implements Listener {
         if (type != Material.IRON_DOOR && type != Material.IRON_TRAPDOOR) return;
 
         Player player = event.getPlayer();
+
+        if (type == Material.IRON_DOOR && !player.hasPermission(IRON_DOOR_PERMISSION)) return;
+        if (type == Material.IRON_TRAPDOOR && !player.hasPermission(IRON_TRAPDOOR_PERMISSION)) return;
+
         boolean mainHandEmpty = player.getInventory().getItemInMainHand() == null || player.getInventory().getItemInMainHand().getType().isAir();
         boolean offHandEmpty = player.getInventory().getItemInOffHand() == null || player.getInventory().getItemInOffHand().getType().isAir();
 
