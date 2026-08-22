@@ -86,7 +86,7 @@ public class Hatchturtleeggsfaster extends SpotPlugin implements Listener {
                             eggData.setHatch(currentHatch + 1);
                             block.setBlockData(eggData);
                             world.playSound(block.getLocation(), Sound.ENTITY_TURTLE_EGG_CRACK, 1.0f, 1.0f);
-                            world.spawnParticle(Particle.BLOCK_CRACK, block.getLocation().add(0.5, 0.5, 0.5), 15, 0.2, 0.2, 0.2, eggData);
+                            world.spawnParticle(Particle.BLOCK, block.getLocation().add(0.5, 0.5, 0.5), 15, 0.2, 0.2, 0.2, eggData);
 
                             addCoordsToList(stillValidCoords, coords[i], coords[i + 1], coords[i + 2]);
                         } else {

@@ -9,7 +9,6 @@ import com.olziedev.potion.listeners.PotionListener;
 import com.olziedev.potion.utils.Configuration;
 import com.olziedev.potion.utils.Utils;
 import com.olziedev.spotextras.api.SpotPlugin;
-import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
@@ -86,7 +85,8 @@ public class Potion extends SpotPlugin {
             if (!perms.getPermission().startsWith(permPrefix)) continue;
 
             String[] value = perms.getPermission().split(permPrefix);
-            if (value.length > 1 && NumberUtils.isDigits(value[1])) {
+            if (value.length > 1 && !value[1].isEmpty()
+                    && value[1].chars().allMatch(Character::isDigit)) {
                 limits.add(Integer.parseInt(value[1]));
             }
         }

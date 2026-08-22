@@ -2,7 +2,7 @@ name: PerchExtras
 main: com.olziedev.spotextras.SpotExtras
 version: ${version}
 author: Olzie
-api-version: 1.14
+api-version: '26.2'
 permissions:
   antibackteleport.command:
     description: Antiback teleport command
@@ -13,12 +13,21 @@ permissions:
   realestate.admin:
     description: Open the admin manage menu
     default: op
+  evergreen.bulkmapart.use:
+    description: Allows use of /bulkmapart <amount>.
+    default: op
+  evergreen.bulkmapart.reload:
+    description: Allows use of /bulkmapart reload.
+    default: op
 depend:
   - WorldGuard
   - Essentials
   - Vault
   - GriefPrevention
 commands:
+  bulkmapart:
+    description: Duplicate the map-art container held in your main hand.
+    usage: /bulkmapart <amount|reload>
   runcommandall:
     description: Runs a command for all online players.
     usage: /<command> <command with \$player>

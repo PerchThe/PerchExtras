@@ -6,7 +6,6 @@ import com.olziedev.realestate.estate.rent.RentingEstate;
 import com.olziedev.realestate.managers.DatabaseManager;
 import com.olziedev.realestate.utils.Configuration;
 import com.olziedev.realestate.utils.Utils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -38,7 +37,11 @@ public class EStateCreator {
     }
 
     public void setPrice(String price) {
-        this.price = NumberUtils.toLong(price.replace("$", ""), -1);
+        try {
+            this.price = Long.parseLong(price.replace("$", ""));
+        } catch (NumberFormatException ignored) {
+            this.price = -1;
+        }
     }
 
     public void setTime(String time) {
