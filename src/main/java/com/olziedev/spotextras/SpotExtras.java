@@ -52,7 +52,6 @@ public class SpotExtras extends JavaPlugin {
                 new Potion(),
                 new AntiBackTeleport(),
                 new Hatchturtleeggsfaster(),
-                new Openirondoorsbyhand(),
                 new Invisibleitemframes(),
                 new Openblockedcontainers(),
                 new Preventplayersfromgrabbingtoomanyelytras()
