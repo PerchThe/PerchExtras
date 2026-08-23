@@ -1,0 +1,36 @@
+# PerchExtras bulkmapart messages
+#
+# Colors and formatting use MiniMessage:
+#   <red>red text</red>
+#   <bold>bold text</bold>
+#   <#55ff55>hex-colored text</#55ff55>
+#   <gradient:#00aa00:#55ff55>gradient text</gradient>
+#
+# Keep placeholders such as <amount>, <items>, and <container> in the messages
+# where their values should appear. Set prefix to '' if you do not want a prefix.
+
+prefix: '<#48ab76>[BulkMapart]</#48ab76> '
+
+only-players: '<prefix><red>Only players can create map-art copies.</red>'
+no-permission: '<prefix><red>You do not have permission to use this command.</red>'
+usage: '<prefix><green>Usage: /<label> <argument></green>'
+invalid-amount: '<prefix><red>Amount must be a positive whole number.</red>'
+
+hold-container: '<prefix><gray>Hold a shulker box or bundle containing map art in your main hand.</gray>'
+unreadable-shulker: '<prefix><red>The held shulker box could not be read.</red>'
+unreadable-bundle: '<prefix><red>The held bundle could not be read.</red>'
+only-filled-maps: '<prefix><gray>The held <container> must contain only filled maps.</gray>'
+only-mapart-items: '<prefix><gray>The held <container> may contain only filled maps, item frames, and glow item frames.</gray>'
+no-filled-maps: '<prefix><gray>The held <container> does not contain any filled maps.</gray>'
+too-many-maps: '<prefix><red>The held container contains too many maps to duplicate.</red>'
+too-many-items: '<prefix><red>The held container contains too many items to duplicate.</red>'
+not-map-owner: '<prefix><gray>You cannot duplicate this container because at least one map is copyrighted by another player.</gray>'
+
+missing-items: '<prefix><#7db597>Missing:</#7db597><newline><items>'
+missing-list-item: '<gray>- <item><punctuation></gray>'
+not-enough-space: '<prefix><red>You do not have enough inventory space for <amount> <duplicate_word>.</red>'
+success: '<prefix><gray>Created <#7db597><amount></#7db597> <copy_word> using <#7db597><containers></#7db597> and <#7db597><maps></#7db597>.</gray>'
+success-with-frames: '<prefix><gray>Created <#7db597><amount></#7db597> <copy_word> using <#7db597><materials></#7db597>.</gray>'
+
+reload-success: '<prefix><green>Messages reloaded successfully.</green>'
+reload-failure: '<prefix><red>Could not reload messages.yml. Check the server console for details.</red>'

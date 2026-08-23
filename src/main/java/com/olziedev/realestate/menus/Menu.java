@@ -1,7 +1,7 @@
 package com.olziedev.realestate.menus;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import com.olziedev.olziemenu.framework.menu.CachedMenu;
 import com.olziedev.olziemenu.framework.menu.FrameworkMenu;
 import com.olziedev.realestate.RealEstate;
@@ -22,7 +22,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -162,16 +161,9 @@ public abstract class Menu {
 
         String texture = Configuration.getString(section, "texture");
         if (!texture.isEmpty()) {
-            GameProfile profile = new GameProfile(UUID.randomUUID(), null);
-            profile.getProperties().put("textures", new Property("textures", texture));
-
-            try {
-                Field profileField = im.getClass().getDeclaredField("profile");
-                profileField.setAccessible(true);
-                profileField.set(im, profile);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID());
+            profile.setProperty(new ProfileProperty("textures", texture));
+            im.setPlayerProfile(profile);
         }
         return im;
     }
@@ -186,7 +178,7 @@ public abstract class Menu {
         im.setLore((loreReplacements == null ? lore : loreReplacements.apply(lore)).stream().map(Utils::color).collect(Collectors.toList()));
 
         if (section.getBoolean("glowing")) {
-            im.addEnchant(Enchantment.DURABILITY, 1, true);
+            im.addEnchant(Enchantment.UNBREAKING, 1, true);
             try {
                 im.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             } catch (NoClassDefFoundError ignored) {}

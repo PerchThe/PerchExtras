@@ -19,6 +19,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.block.BlockFace;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +72,11 @@ public class Hatchturtleeggsfaster extends SpotPlugin implements Listener {
                         continue;
                     }
 
+                    if (!canTurtleEggHatch(block)) {
+                        addCoordsToList(stillValidCoords, coords[i], coords[i + 1], coords[i + 2]);
+                        continue;
+                    }
+
                     TurtleEgg eggData = (TurtleEgg) block.getBlockData();
 
                     if (Math.random() > 0.4) {
@@ -80,7 +86,7 @@ public class Hatchturtleeggsfaster extends SpotPlugin implements Listener {
                             eggData.setHatch(currentHatch + 1);
                             block.setBlockData(eggData);
                             world.playSound(block.getLocation(), Sound.ENTITY_TURTLE_EGG_CRACK, 1.0f, 1.0f);
-                            world.spawnParticle(Particle.BLOCK_CRACK, block.getLocation().add(0.5, 0.5, 0.5), 15, 0.2, 0.2, 0.2, eggData);
+                            world.spawnParticle(Particle.BLOCK, block.getLocation().add(0.5, 0.5, 0.5), 15, 0.2, 0.2, 0.2, eggData);
 
                             addCoordsToList(stillValidCoords, coords[i], coords[i + 1], coords[i + 2]);
                         } else {
@@ -132,6 +138,14 @@ public class Hatchturtleeggsfaster extends SpotPlugin implements Listener {
         Chunk chunk = block.getChunk();
         List<Integer> currentCoords = getCoordsFromChunk(chunk);
 
+        for (int i = 0; i < currentCoords.size(); i += 3) {
+            if (currentCoords.get(i) == block.getX()
+                    && currentCoords.get(i + 1) == block.getY()
+                    && currentCoords.get(i + 2) == block.getZ()) {
+                return;
+            }
+        }
+
         currentCoords.add(block.getX());
         currentCoords.add(block.getY());
         currentCoords.add(block.getZ());
@@ -182,5 +196,12 @@ public class Hatchturtleeggsfaster extends SpotPlugin implements Listener {
         list.add(x);
         list.add(y);
         list.add(z);
+    }
+
+    private boolean canTurtleEggHatch(Block eggBlock) {
+        Material below = eggBlock.getRelative(BlockFace.DOWN).getType();
+
+        return below == Material.SAND
+                || below == Material.RED_SAND;
     }
 }

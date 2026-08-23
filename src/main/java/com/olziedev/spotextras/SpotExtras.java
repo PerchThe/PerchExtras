@@ -1,6 +1,7 @@
 package com.olziedev.spotextras;
 
 import com.olziedev.antibackteleport.AntiBackTeleport;
+import com.olziedev.bulkmapart.BulkMapart;
 import com.olziedev.potion.Potion;
 import com.olziedev.realestate.RealEstate;
 import com.olziedev.spotextras.api.SpotPlugin;
@@ -51,8 +52,8 @@ public class SpotExtras extends JavaPlugin {
                 new RealEstate(),
                 new Potion(),
                 new AntiBackTeleport(),
+                new BulkMapart(),
                 new Hatchturtleeggsfaster(),
-                new Openirondoorsbyhand(),
                 new Invisibleitemframes(),
                 new Openblockedcontainers(),
                 new Preventplayersfromgrabbingtoomanyelytras()
