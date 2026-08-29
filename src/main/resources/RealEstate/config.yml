@@ -19,6 +19,10 @@ settings:
     nicemode: "-nm"
     # Show in %flags% the flags that are on the sign.
     nicemode-display: "&aNice Mode"
+    # Non-extendable rent syntax: -ne <group> <cooldown days>
+    noextend: "-ne"
+    # Show in %flags% when the rent cannot be extended.
+    noextend-display: "&cNo Extend"
 
   lines-rent:
     - "[rent]"
@@ -110,3 +114,7 @@ lang:
   rent-renewed-other: "&aYour rent with %player% has just renewed!"
   rent-hold: "&a%player%'s rent has just ended and is now on hold %location%"
   rent-hold-other: "&aYour rent with %player% has been put on hold!"
+  noextend-create-denied: "&cYou need realestate.noextend.create and realestate.noextend.bypass to create non-extendable rents."
+  invalid-noextend: "&cInvalid no-extend flag. Use -ne <group> <days>."
+  noextend-blocked: "&cYou cannot rent another estate in group %group% for %time%."
+  noextend-cannot-extend: "&cThis rent cannot be extended."

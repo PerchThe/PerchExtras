@@ -2,6 +2,7 @@ package com.olziedev.realestate.estate;
 
 import com.olziedev.realestate.RealEstate;
 import com.olziedev.realestate.estate.rent.RentFlags;
+import com.olziedev.realestate.estate.rent.NoExtendRule;
 import com.olziedev.realestate.estate.rent.RentingEstate;
 import com.olziedev.realestate.managers.DatabaseManager;
 import com.olziedev.realestate.utils.Configuration;
@@ -23,6 +24,8 @@ public class EStateCreator {
     private long time;
     private long price;
     private List<RentFlags> rentFlags;
+    private NoExtendRule noExtendRule;
+    private String rentFlagError;
     private final Player player;
 
     private final String type;
@@ -50,9 +53,35 @@ public class EStateCreator {
 
     public void setRentFlags(String rentFlags) {
         this.rentFlags = RentFlags.getByTag(rentFlags);
+        if (!NoExtendRule.isRequested(rentFlags, RentFlags.NOEXTEND.getTag())) return;
+
+        if (!this.player.hasPermission("realestate.noextend.create")
+                || !this.player.hasPermission("realestate.noextend.bypass")) {
+            this.rentFlagError = "lang.noextend-create-denied";
+            return;
+        }
+
+        this.noExtendRule = NoExtendRule.parse(rentFlags, RentFlags.NOEXTEND.getTag());
+        if (this.noExtendRule == null) {
+            this.rentFlagError = "lang.invalid-noextend";
+            return;
+        }
+
+        this.rentFlags.remove(RentFlags.RENEW);
+        this.rentFlags.remove(RentFlags.NICEMODE);
+        if (!this.rentFlags.contains(RentFlags.NOEXTEND)) {
+            this.rentFlags.add(RentFlags.NOEXTEND);
+        }
     }
 
     public void create(Block block, long claimID, long parentID) {
+        if (this.rentFlagError != null) {
+            String fallback = this.rentFlagError.equals("lang.invalid-noextend")
+                    ? "&cInvalid no-extend flag. Use -ne <group> <days>."
+                    : "&cYou do not have permission to create non-extendable rents.";
+            Utils.sendMessage(player, Configuration.getString(Configuration.getConfig(), this.rentFlagError, fallback));
+            return;
+        }
         if (this.price <= 0 || this.time <= 0) return;
 
         Location location = block.getLocation();
@@ -65,21 +94,38 @@ public class EStateCreator {
         try {
             boolean isRent = this.type.equals("rent");
             Connection con = manager.getConnection();
-            PreparedStatement ps = con.prepareStatement("INSERT INTO estate_" + this.type + "ing(id, parent_id, owner, " + (isRent ? "time, flags," : "") + " price, sign_world, sign_x, sign_y, sign_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?" + (isRent ? ", ?, ?" : "") + ")");
-            ps.setLong(1, claimID);
-            ps.setLong(2, parentID);
-            ps.setString(3, String.valueOf(player.getUniqueId()));
             if (isRent) {
+                PreparedStatement ps = con.prepareStatement(
+                        "INSERT INTO estate_renting(id, parent_id, owner, time, flags, no_extend_group, no_extend_days, price, sign_world, sign_x, sign_y, sign_z) "
+                                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                );
+                ps.setLong(1, claimID);
+                ps.setLong(2, parentID);
+                ps.setString(3, String.valueOf(player.getUniqueId()));
                 ps.setLong(4, this.time);
                 ps.setString(5, this.rentFlags == null ? null : this.rentFlags.stream().map(RentFlags::name).collect(Collectors.joining(",")));
+                ps.setString(6, this.noExtendRule == null ? null : this.noExtendRule.group());
+                ps.setInt(7, this.noExtendRule == null ? 0 : this.noExtendRule.cooldownDays());
+                ps.setLong(8, this.price);
+                ps.setString(9, location.getWorld().getName());
+                ps.setInt(10, location.getBlockX());
+                ps.setInt(11, location.getBlockY());
+                ps.setInt(12, location.getBlockZ());
+                ps.executeUpdate();
+            } else {
+                PreparedStatement ps = con.prepareStatement(
+                        "INSERT INTO estate_selling(id, parent_id, owner, price, sign_world, sign_x, sign_y, sign_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
+                );
+                ps.setLong(1, claimID);
+                ps.setLong(2, parentID);
+                ps.setString(3, String.valueOf(player.getUniqueId()));
+                ps.setLong(4, this.price);
+                ps.setString(5, location.getWorld().getName());
+                ps.setInt(6, location.getBlockX());
+                ps.setInt(7, location.getBlockY());
+                ps.setInt(8, location.getBlockZ());
+                ps.executeUpdate();
             }
-            int position = isRent ? 6 : 4;
-            ps.setLong(position, this.price);
-            ps.setString(position + 1, location.getWorld().getName());
-            ps.setInt(position + 2, location.getBlockX());
-            ps.setInt(position + 3, location.getBlockY());
-            ps.setInt(position + 4, location.getBlockZ());
-            ps.executeUpdate();
         } catch (Exception ex) {
             ex.printStackTrace();
         }

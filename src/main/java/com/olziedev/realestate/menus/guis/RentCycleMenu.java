@@ -16,6 +16,7 @@ import com.olziedev.realestate.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 public class RentCycleMenu extends Menu {
 
@@ -34,6 +35,7 @@ public class RentCycleMenu extends Menu {
 
             ConfigurationSection section = this.getSection().getConfigurationSection("clickable-items");
             if (event.getSlot() == section.getInt("rent.slot", -1)) {
+                if (this.isBlockedByNoExtendGroup(player, eState)) return true;
                 if (!eState.setPaidPrice(1, player.getUniqueId())) return true;
 
                 if (eState.getRentFlags().contains(RentFlags.RENEW)) {
@@ -49,6 +51,10 @@ public class RentCycleMenu extends Menu {
                 return true;
             }
             if (event.getSlot() == section.getInt("cycle.slot", -1)) {
+                if (eState.hasNoExtend()) {
+                    this.sendCannotExtend(player);
+                    return true;
+                }
                 guiPlayer.setDontReady(true);
                 this.handleSign(eState, guiPlayer, true);
             }
@@ -67,6 +73,12 @@ public class RentCycleMenu extends Menu {
     }
 
     public void handleSign(RentingEstate eState, GUIPlayer guiPlayer, boolean newRenter) {
+        if (eState.hasNoExtend()) {
+            guiPlayer.setDontReady(false);
+            this.sendCannotExtend(guiPlayer.getPlayer());
+            return;
+        }
+
         ProtocolLibAddon addon = RealEstate.getAddonManager().getAddon(ProtocolLibAddon.class);
         VaultAddon vault = RealEstate.getAddonManager().getAddon(VaultAddon.class);
         guiPlayer.setAmount(null);
@@ -112,7 +124,41 @@ public class RentCycleMenu extends Menu {
                 .createMenu(this.cachedMenu);
         GUIPlayer guiPlayer = RealEstate.getDatabaseManager().getPlayer(player.getUniqueId()).getGUIPlayer();
 
-        this.createItems(menu, guiPlayer.getEstate(), getSection(), "items", "clickable-items");
+        RentingEstate rentingEstate = (RentingEstate) guiPlayer.getEstate();
+        this.createItems(menu, rentingEstate, getSection(), "items", "clickable-items");
+        if (rentingEstate.hasNoExtend()) {
+            ItemStack item = this.createItem(this.getSection().getConfigurationSection("noextend-item"));
+            if (item == null) item = this.createNoExtendFallbackItem();
+            menu.setItem(this.getSection().getInt("clickable-items.cycle.slot"), item);
+        }
         menu.openInventory(player, inv -> guiPlayer.setDontReady(false));
+    }
+
+    private boolean isBlockedByNoExtendGroup(Player player, RentingEstate estate) {
+        if (!estate.hasNoExtend() || player.hasPermission("realestate.noextend.bypass")) return false;
+
+        long blockedUntil = estate.getNoExtendBlockedUntil(player.getUniqueId());
+        long now = System.currentTimeMillis();
+        if (blockedUntil <= now) return false;
+
+        long remaining = blockedUntil - now;
+        long seconds = Math.max(1L, remaining / 1000L + (remaining % 1000L == 0 ? 0 : 1));
+        String message = Configuration.getString(
+                Configuration.getConfig(),
+                "lang.noextend-blocked",
+                "&cYou cannot rent another estate in group %group% for %time%."
+        );
+        Utils.sendMessage(player, message
+                .replace("%group%", estate.getNoExtendGroup())
+                .replace("%time%", Utils.formatTime(seconds)));
+        return true;
+    }
+
+    private void sendCannotExtend(Player player) {
+        Utils.sendMessage(player, Configuration.getString(
+                Configuration.getConfig(),
+                "lang.noextend-cannot-extend",
+                "&cThis rent cannot be extended."
+        ));
     }
 }

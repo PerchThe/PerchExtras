@@ -6,7 +6,10 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 
 public class Configuration {
 
@@ -35,7 +38,17 @@ public class Configuration {
         if (!file.exists()) {
             plugin.saveResource(file.getParentFile().getName() + File.separator + file.getName(), false);
         }
-        field.set(null, YamlConfiguration.loadConfiguration(file));
+        YamlConfiguration loaded = YamlConfiguration.loadConfiguration(file);
+        String resourcePath = file.getParentFile().getName() + "/" + file.getName();
+        try (InputStream resource = plugin.plugin.getResource(resourcePath)) {
+            if (resource != null) {
+                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(resource, StandardCharsets.UTF_8)
+                );
+                loaded.setDefaults(defaults);
+            }
+        }
+        field.set(null, loaded);
     }
 
     public static FileConfiguration getConfig() {
@@ -50,6 +63,13 @@ public class Configuration {
         if (section == null) return "";
 
         return section.getString(s, "");
+    }
+
+    public static String getString(ConfigurationSection section, String path, String fallback) {
+        if (section == null) return fallback;
+
+        String value = section.getString(path, fallback);
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     public static String getString(YamlConfiguration config, String s) {

@@ -147,6 +147,15 @@ public abstract class Menu {
         return addBaseItemMeta(itemStack, itemStack.getItemMeta(), section, nameReplacements, loreReplacements);
     }
 
+    protected ItemStack createNoExtendFallbackItem() {
+        ItemStack item = new ItemStack(Material.BARRIER);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(Utils.color("&cThis rent cannot be extended"));
+        meta.setLore(List.of(Utils.color("&7This estate can only be rented for one cycle.")));
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public ItemStack createSkull(ConfigurationSection section, Function<String, String> nameReplacements, Function<List<String>, List<String>> loreReplacements) {
         if (section == null) return null;
 

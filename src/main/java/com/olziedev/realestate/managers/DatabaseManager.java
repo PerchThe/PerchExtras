@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Map;
 import java.util.UUID;
@@ -36,8 +37,9 @@ public class DatabaseManager extends Manager {
             }
             Connection con = this.connect();
             con.prepareStatement("CREATE TABLE IF NOT EXISTS estate_selling(id VARCHAR(255), parent_id INT, owner LONGTEXT, price DOUBLE, sign_world LONGTEXT, sign_x INT, sign_y INT, sign_z INT, PRIMARY KEY(id))").execute();
-            con.prepareStatement("CREATE TABLE IF NOT EXISTS estate_renting(id VARCHAR(255), parent_id INT, owner LONGTEXT, price DOUBLE, paid_price LONG, next_time LONG, time LONG, cancelled BOOLEAN, renter LONGTEXT, sign_world LONGTEXT, sign_x INT, sign_y INT, sign_z INT, flags LONGTEXT, activated_flags LONGTEXT, PRIMARY KEY(id))").execute();
+            con.prepareStatement("CREATE TABLE IF NOT EXISTS estate_renting(id VARCHAR(255), parent_id INT, owner LONGTEXT, price DOUBLE, paid_price LONG, next_time LONG, time LONG, cancelled BOOLEAN, renter LONGTEXT, sign_world LONGTEXT, sign_x INT, sign_y INT, sign_z INT, flags LONGTEXT, activated_flags LONGTEXT, no_extend_group LONGTEXT, no_extend_days INT, PRIMARY KEY(id))").execute();
             con.prepareStatement("CREATE TABLE IF NOT EXISTS estate_players(uuid VARCHAR(255), messages LONGTEXT, reminders LONGTEXT, PRIMARY KEY(uuid))").execute();
+            con.prepareStatement("CREATE TABLE IF NOT EXISTS estate_rent_group_locks(uuid VARCHAR(255), group_name VARCHAR(255), estate_id VARCHAR(255), blocked_until LONG, PRIMARY KEY(uuid, group_name, estate_id))").execute();
 
             try {
                 con.prepareStatement("ALTER TABLE estate_renting ADD COLUMN flags LONGTEXT").execute();
@@ -47,6 +49,12 @@ public class DatabaseManager extends Manager {
             } catch (Throwable ignored) {}
             try {
                 con.prepareStatement("ALTER TABLE estate_players ADD COLUMN dismiss_messages LONGTEXT").execute();
+            } catch (Throwable ignored) {}
+            try {
+                con.prepareStatement("ALTER TABLE estate_renting ADD COLUMN no_extend_group LONGTEXT").execute();
+            } catch (Throwable ignored) {}
+            try {
+                con.prepareStatement("ALTER TABLE estate_renting ADD COLUMN no_extend_days INT").execute();
             } catch (Throwable ignored) {}
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -128,5 +136,44 @@ public class DatabaseManager extends Manager {
             this.players.put(id, player);
         }
         return player;
+    }
+
+    public synchronized long getGroupBlockedUntil(UUID player, String group) {
+        long now = System.currentTimeMillis();
+        try {
+            Connection con = this.getConnection();
+            PreparedStatement cleanup = con.prepareStatement(
+                    "DELETE FROM estate_rent_group_locks WHERE blocked_until <= ?"
+            );
+            cleanup.setLong(1, now);
+            cleanup.executeUpdate();
+
+            PreparedStatement query = con.prepareStatement(
+                    "SELECT MAX(blocked_until) AS blocked_until FROM estate_rent_group_locks WHERE uuid = ? AND group_name = ?"
+            );
+            query.setString(1, player.toString());
+            query.setString(2, group);
+            ResultSet result = query.executeQuery();
+            return result.next() ? result.getLong("blocked_until") : 0L;
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            return Long.MAX_VALUE;
+        }
+    }
+
+    public synchronized void setGroupLock(UUID player, String group, long estateId, long blockedUntil) {
+        try {
+            PreparedStatement statement = this.getConnection().prepareStatement(
+                    "INSERT INTO estate_rent_group_locks(uuid, group_name, estate_id, blocked_until) VALUES(?, ?, ?, ?) "
+                            + "ON CONFLICT(uuid, group_name, estate_id) DO UPDATE SET blocked_until = excluded.blocked_until"
+            );
+            statement.setString(1, player.toString());
+            statement.setString(2, group);
+            statement.setLong(3, estateId);
+            statement.setLong(4, blockedUntil);
+            statement.executeUpdate();
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
     }
 }

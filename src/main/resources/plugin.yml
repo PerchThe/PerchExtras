@@ -13,6 +13,12 @@ permissions:
   realestate.admin:
     description: Open the admin manage menu
     default: op
+  realestate.noextend.create:
+    description: Create non-extendable grouped rents with the -ne flag
+    default: op
+  realestate.noextend.bypass:
+    description: Bypass non-extendable rent group restrictions
+    default: op
   evergreen.bulkmapart.use:
     description: Allows use of /bulkmapart <amount>.
     default: op
