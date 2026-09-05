@@ -13,6 +13,7 @@ import com.olziedev.realestate.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 public class RentManageMenu extends Menu {
 
@@ -56,6 +57,14 @@ public class RentManageMenu extends Menu {
                 Utils.sortInventory(eState.getOwner());
                 return true;
             }
+            if (event.getSlot() == section.getInt("cycle.slot", -1) && eState.hasNoExtend()) {
+                Utils.sendMessage(player, Configuration.getString(
+                        Configuration.getConfig(),
+                        "lang.noextend-cannot-extend",
+                        "&cThis rent cannot be extended."
+                ));
+                return true;
+            }
             if (event.getSlot() == section.getInt("cycle.slot", -1) && !eState.isCancelled()) RealEstate.getMenuManager().getMenu(RentCycleMenu.class).handleSign(eState, guiPlayer, false);
             return true;
         });
@@ -78,6 +87,10 @@ public class RentManageMenu extends Menu {
         this.createItems(menu, rentingEstate, getSection(), "items", "clickable-items");
         if (rentingEstate.isCancelled()) {
             menu.setItem(this.getSection().getInt("clickable-items.cycle.slot"), this.createItem(this.getSection().getConfigurationSection("cancelled-item")));
+        } else if (rentingEstate.hasNoExtend()) {
+            ItemStack item = this.createItem(this.getSection().getConfigurationSection("noextend-item"));
+            if (item == null) item = this.createNoExtendFallbackItem();
+            menu.setItem(this.getSection().getInt("clickable-items.cycle.slot"), item);
         }
         menu.openInventory(player);
     }

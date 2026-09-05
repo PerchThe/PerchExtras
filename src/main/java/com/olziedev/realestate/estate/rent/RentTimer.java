@@ -11,8 +11,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public class RentTimer extends BukkitRunnable {
 
@@ -26,10 +26,12 @@ public class RentTimer extends BukkitRunnable {
             if (!(states instanceof RentingEstate)) continue;
 
             RentingEstate estate = (RentingEstate) states;
-            if (estate.getRenter() == null || estate.getActivatedFlags().contains(RentFlags.NICEMODE)) continue;
+            if (estate.getRenter() == null) continue;
 
+            long now = System.currentTimeMillis();
+            boolean onHold = estate.getActivatedFlags().contains(RentFlags.NICEMODE);
             long paidPrice = estate.getPaidPrice();
-            if (new Date().getTime() >= paidPrice) {
+            if (!onHold && now >= paidPrice) {
                 this.handleNextTime(vaultAddon, estate);
 
                 if (estate.getActivatedFlags().contains(RentFlags.RENEW) && vaultAddon.economy.has(Bukkit.getOfflinePlayer(estate.getRenter()), estate.getPrice()) && !estate.isCancelled()) {
@@ -101,7 +103,11 @@ public class RentTimer extends BukkitRunnable {
                 });
                 continue;
             }
-            if (new Date().getTime() < estate.getNextTime()) continue;
+            if (estate.isRenterOfflineTooLong(now)) {
+                this.endOfflineRent(estate);
+                continue;
+            }
+            if (onHold || now < estate.getNextTime()) continue;
 
             this.handleNextTime(vaultAddon, estate);
             if (estate.getTimesPaid() == 1) {
@@ -124,5 +130,39 @@ public class RentTimer extends BukkitRunnable {
     private void handleNextTime(VaultAddon vaultAddon, RentingEstate estate) {
         vaultAddon.economy.depositPlayer(Bukkit.getOfflinePlayer(estate.getOwner()), estate.getPrice());
         manager.plugin.getLogger().info("Giving back the money to the owner of the claim, cycle just reached the end.");
+    }
+
+    private void endOfflineRent(RentingEstate estate) {
+        UUID renter = estate.getRenter();
+        int offlineDays = estate.getOfflineDays();
+        Bukkit.getScheduler().runTask(RealEstate.getInstance().plugin, () -> {
+            if (!renter.equals(estate.getRenter()) || !estate.isRenterOfflineTooLong(System.currentTimeMillis())) return;
+
+            String renterName = String.valueOf(Bukkit.getOfflinePlayer(renter).getName());
+            String ownerName = String.valueOf(Bukkit.getOfflinePlayer(estate.getOwner()).getName());
+            estate.setRenter(-1, null, null);
+
+            manager.getPlayer(estate.getOwner()).manageMessage(Configuration.getString(
+                            Configuration.getConfig(),
+                            "lang.rent-ended-offline",
+                            "&a%player%'s rent at %location% ended because they were offline for %days% days."
+                    )
+                    .replace("%player%", renterName)
+                    .replace("%location%", Utils.locationString(estate.getSignLocation()))
+                    .replace("%days%", String.valueOf(offlineDays)), true);
+
+            manager.getPlayer(renter).manageMessage(Configuration.getString(
+                            Configuration.getConfig(),
+                            "lang.rent-ended-offline-other",
+                            "&cYour rent with %player% ended because you were offline for %days% days."
+                    )
+                    .replace("%player%", ownerName)
+                    .replace("%location%", Utils.locationString(estate.getSignLocation()))
+                    .replace("%days%", String.valueOf(offlineDays)), true);
+
+            Utils.sortInventory(renter);
+            Utils.sortInventory(estate.getOwner());
+            manager.plugin.getLogger().info("Ended " + renterName + "'s rent after " + offlineDays + " offline days.");
+        });
     }
 }

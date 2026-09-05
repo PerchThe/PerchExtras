@@ -19,6 +19,16 @@ settings:
     nicemode: "-nm"
     # Show in %flags% the flags that are on the sign.
     nicemode-display: "&aNice Mode"
+    # Non-extendable rent syntax: -ne <group> <cooldown days>
+    noextend: "-ne"
+    # Show in %flags% when the rent cannot be extended.
+    noextend-display: "&cNo Extend"
+    # End the rent after its renter has been offline for this flag's number of days.
+    offline: "-offline"
+    offline-display: "&eOffline Limit"
+    # Only allow one active rent in the named group. Unlike -ne, this can be extended and has no cooldown.
+    exclusive: "-e"
+    exclusive-display: "&6Exclusive Group"
 
   lines-rent:
     - "[rent]"
@@ -110,3 +120,14 @@ lang:
   rent-renewed-other: "&aYour rent with %player% has just renewed!"
   rent-hold: "&a%player%'s rent has just ended and is now on hold %location%"
   rent-hold-other: "&aYour rent with %player% has been put on hold!"
+  noextend-create-denied: "&cYou need realestate.create.noextend to create non-extendable rents."
+  invalid-noextend: "&cInvalid no-extend flag. Use -ne <group> <days>."
+  noextend-blocked: "&cYou cannot rent another estate in group %group% for %time%."
+  noextend-cannot-extend: "&cThis rent cannot be extended."
+  invalid-offline: "&cInvalid offline flag. Use -offline <days>."
+  rent-ended-offline: "&a%player%'s rent at %location% ended because they were offline for %days% days."
+  rent-ended-offline-other: "&cYour rent with %player% ended because you were offline for %days% days."
+  invalid-exclusive: "&cInvalid exclusive flag. Use -e <group>."
+  exclusive-blocked: "&cYou cannot rent another estate in group %group% while you are already renting one."
+  exclusive-create-denied: "&cYou need realestate.create.exclusive to create exclusive-group rents."
+  offline-create-denied: "&cYou need realestate.create.offline to create offline-limited rents."

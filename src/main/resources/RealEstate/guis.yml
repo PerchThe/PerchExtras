@@ -239,6 +239,11 @@ rentestate:
 rentcycle:
   title: "&a&lChoose your cycle"
   size: 27
+  noextend-item:
+    material: BARRIER
+    name: "&cThis rent cannot be extended"
+    lore:
+      - "&7This estate can only be rented for one cycle."
 
   clickable-items:
     rent:
@@ -359,6 +364,11 @@ rentcycle:
 rentmanage:
   title: "&a&lManage your rent"
   size: 27
+  noextend-item:
+    material: BARRIER
+    name: "&cThis rent cannot be extended"
+    lore:
+      - "&7This estate can only be rented for one cycle."
   cancelled-item:
     material: BARRIER
     name: "&cYou cannot extend your cycle!"

@@ -33,6 +33,10 @@ public class RentingEstate extends EState {
     private boolean cancelled;
     private List<RentFlags> rentFlags;
     private List<RentFlags> activatedFlags;
+    private String noExtendGroup;
+    private int noExtendDays;
+    private Integer offlineDays;
+    private String exclusiveGroup;
 
     public RentingEstate(long claimID, long childClaimID) {
         super(claimID, childClaimID);
@@ -51,6 +55,11 @@ public class RentingEstate extends EState {
                 this.cancelled = result.getBoolean("cancelled");
                 this.rentFlags = RentFlags.parse(result.getString("flags"));
                 this.activatedFlags = RentFlags.parse(result.getString("activated_flags"));
+                this.noExtendGroup = result.getString("no_extend_group");
+                this.noExtendDays = result.getInt("no_extend_days");
+                this.exclusiveGroup = result.getString("exclusive_group");
+                int loadedOfflineDays = result.getInt("offline_days");
+                this.offlineDays = result.wasNull() ? null : loadedOfflineDays;
             }
             this.trustPlayer();
         } catch (Exception ex) {
@@ -75,6 +84,9 @@ public class RentingEstate extends EState {
     }
 
     public void setRenter(int timesPaid, UUID renter, List<RentFlags> activatedFlags, boolean removeStuff) {
+        UUID previousRenter = this.renter;
+        if (previousRenter != null && renter == null) this.updateNoExtendLockForEarlyEnd(previousRenter);
+
         Claim claim = this.getClaim();
         if (this.renter != null && renter == null) {
             if (removeStuff) {
@@ -94,6 +106,14 @@ public class RentingEstate extends EState {
         this.renter = renter;
         this.activatedFlags = activatedFlags == null ? new ArrayList<>() : activatedFlags;
         if (renter != null) {
+            if (this.hasNoExtend()) {
+                manager.setGroupLock(
+                        renter,
+                        this.noExtendGroup,
+                        this.claimID,
+                        safeAdd(this.paidPrice, this.getNoExtendCooldownMillis())
+                );
+            }
             this.trustPlayer();
             Utils.sendMessage(Bukkit.getPlayer(renter), Configuration.getConfig().getString("lang.successfully-rented"));
             manager.getPlayer(this.owner).manageMessage(Configuration.getConfig().getString("lang.successfully-rented-other").replace("%price%", Utils.formatNumber(this.price * timesPaid)).replace("%player%", this.getRenterName()).replace("%location%", Utils.locationString(this.signLocation)), true);
@@ -215,6 +235,7 @@ public class RentingEstate extends EState {
     }
 
     public void remove() {
+        if (this.renter != null) this.updateNoExtendLockForEarlyEnd(this.renter);
         manager.getEStates().remove(this.signLocation);
 
         try {
@@ -296,5 +317,82 @@ public class RentingEstate extends EState {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    public boolean hasNoExtend() {
+        return this.rentFlags.contains(RentFlags.NOEXTEND)
+                && this.noExtendGroup != null
+                && !this.noExtendGroup.isBlank();
+    }
+
+    public String getNoExtendGroup() {
+        return this.noExtendGroup;
+    }
+
+    public int getNoExtendDays() {
+        return this.noExtendDays;
+    }
+
+    public boolean hasOfflineLimit() {
+        return this.rentFlags.contains(RentFlags.OFFLINE) && this.offlineDays != null;
+    }
+
+    public int getOfflineDays() {
+        return this.offlineDays == null ? 0 : this.offlineDays;
+    }
+
+    public boolean hasExclusive() {
+        return this.rentFlags.contains(RentFlags.EXCLUSIVE)
+                && this.exclusiveGroup != null
+                && !this.exclusiveGroup.isBlank();
+    }
+
+    public String getExclusiveGroup() {
+        return this.exclusiveGroup;
+    }
+
+    public boolean isInRentGroup(String group) {
+        return group != null && ((this.hasNoExtend() && group.equalsIgnoreCase(this.noExtendGroup))
+                || (this.hasExclusive() && group.equalsIgnoreCase(this.exclusiveGroup)));
+    }
+
+    public boolean isRenterOfflineTooLong(long now) {
+        if (!this.hasOfflineLimit() || this.renter == null) return false;
+
+        OfflinePlayer player = Bukkit.getOfflinePlayer(this.renter);
+        if (player.isOnline()) return false;
+        if (RealEstate.getAddonManager().getAddon(VaultAddon.class).hasPermission(player, "realestate.bypass.offline")) return false;
+
+        long lastSeen = player.getLastSeen();
+        if (lastSeen <= 0L || now < lastSeen) return false;
+        return now - lastSeen >= this.getOfflineDays() * 86_400_000L;
+    }
+
+    public long getNoExtendBlockedUntil(UUID player) {
+        if (!this.hasNoExtend()) return 0L;
+        return manager.getGroupBlockedUntil(player, this.noExtendGroup);
+    }
+
+    private long getNoExtendCooldownMillis() {
+        return this.noExtendDays * 86_400_000L;
+    }
+
+    private void updateNoExtendLockForEarlyEnd(UUID player) {
+        if (!this.hasNoExtend()) return;
+
+        long now = System.currentTimeMillis();
+        if (now >= this.paidPrice) return;
+
+        manager.setGroupLock(
+                player,
+                this.noExtendGroup,
+                this.claimID,
+                safeAdd(now, this.getNoExtendCooldownMillis())
+        );
+    }
+
+    private static long safeAdd(long left, long right) {
+        if (right > 0 && left > Long.MAX_VALUE - right) return Long.MAX_VALUE;
+        return left + right;
     }
 }

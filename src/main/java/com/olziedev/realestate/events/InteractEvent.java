@@ -5,6 +5,7 @@ import com.olziedev.realestate.addons.GriefPreventionAddon;
 import com.olziedev.realestate.estate.AuctionEstate;
 import com.olziedev.realestate.estate.EState;
 import com.olziedev.realestate.estate.rent.RentFlags;
+import com.olziedev.realestate.estate.rent.RentGroupAccess;
 import com.olziedev.realestate.estate.rent.RentingEstate;
 import com.olziedev.realestate.managers.MenuManager;
 import com.olziedev.realestate.menus.guis.*;
@@ -85,7 +86,10 @@ public class InteractEvent implements Listener {
             Utils.sendMessage(player, Configuration.getConfig().getString("lang.cannot-buy"));
             return;
         }
+        if (RentGroupAccess.denyIfBlocked(player, rentingEstate)) return;
+
         eState.ready = false;
         menuManager.getMenu(RentEstateMenu.class).open(player);
     }
+
 }

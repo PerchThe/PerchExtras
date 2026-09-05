@@ -14,6 +14,7 @@ import com.olziedev.openirondoorsbyhand.Openirondoorsbyhand;
 import com.olziedev.invisibleitemframes.Invisibleitemframes;
 import com.olziedev.openblockedcontainers.Openblockedcontainers;
 import com.olziedev.preventplayersfromgrabbingtoomanyelytras.Preventplayersfromgrabbingtoomanyelytras;
+import com.olziedev.preventplayersfromdestroyingtheirseeb.Preventplayersfromdestroyingtheirseeb;
 
 import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -56,6 +57,7 @@ public class SpotExtras extends JavaPlugin {
                 new Hatchturtleeggsfaster(),
                 new Invisibleitemframes(),
                 new Openblockedcontainers(),
+                new Preventplayersfromdestroyingtheirseeb(),
                 new Preventplayersfromgrabbingtoomanyelytras()
         ));
 

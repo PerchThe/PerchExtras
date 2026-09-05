@@ -7,6 +7,7 @@ import com.olziedev.realestate.addons.ProtocolLibAddon;
 import com.olziedev.realestate.addons.VaultAddon;
 import com.olziedev.realestate.estate.EState;
 import com.olziedev.realestate.estate.rent.RentFlags;
+import com.olziedev.realestate.estate.rent.RentGroupAccess;
 import com.olziedev.realestate.estate.rent.RentingEstate;
 import com.olziedev.realestate.managers.Manager;
 import com.olziedev.realestate.menus.Menu;
@@ -16,6 +17,7 @@ import com.olziedev.realestate.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 public class RentCycleMenu extends Menu {
 
@@ -34,6 +36,7 @@ public class RentCycleMenu extends Menu {
 
             ConfigurationSection section = this.getSection().getConfigurationSection("clickable-items");
             if (event.getSlot() == section.getInt("rent.slot", -1)) {
+                if (RentGroupAccess.denyIfBlocked(player, eState)) return true;
                 if (!eState.setPaidPrice(1, player.getUniqueId())) return true;
 
                 if (eState.getRentFlags().contains(RentFlags.RENEW)) {
@@ -49,6 +52,10 @@ public class RentCycleMenu extends Menu {
                 return true;
             }
             if (event.getSlot() == section.getInt("cycle.slot", -1)) {
+                if (eState.hasNoExtend()) {
+                    this.sendCannotExtend(player);
+                    return true;
+                }
                 guiPlayer.setDontReady(true);
                 this.handleSign(eState, guiPlayer, true);
             }
@@ -67,6 +74,12 @@ public class RentCycleMenu extends Menu {
     }
 
     public void handleSign(RentingEstate eState, GUIPlayer guiPlayer, boolean newRenter) {
+        if (eState.hasNoExtend()) {
+            guiPlayer.setDontReady(false);
+            this.sendCannotExtend(guiPlayer.getPlayer());
+            return;
+        }
+
         ProtocolLibAddon addon = RealEstate.getAddonManager().getAddon(ProtocolLibAddon.class);
         VaultAddon vault = RealEstate.getAddonManager().getAddon(VaultAddon.class);
         guiPlayer.setAmount(null);
@@ -79,7 +92,9 @@ public class RentCycleMenu extends Menu {
             }
             return true;
         }, () -> {
-            if (guiPlayer.getAmount() == null || !eState.setPaidPrice(guiPlayer.getAmount(), guiPlayer.getUUID())) return;
+            if (guiPlayer.getAmount() == null) return;
+            if (newRenter && RentGroupAccess.denyIfBlocked(guiPlayer.getPlayer(), eState)) return;
+            if (!eState.setPaidPrice(guiPlayer.getAmount(), guiPlayer.getUUID())) return;
 
             if (newRenter) {
                 if (eState.getRentFlags().contains(RentFlags.RENEW)) {
@@ -112,7 +127,21 @@ public class RentCycleMenu extends Menu {
                 .createMenu(this.cachedMenu);
         GUIPlayer guiPlayer = RealEstate.getDatabaseManager().getPlayer(player.getUniqueId()).getGUIPlayer();
 
-        this.createItems(menu, guiPlayer.getEstate(), getSection(), "items", "clickable-items");
+        RentingEstate rentingEstate = (RentingEstate) guiPlayer.getEstate();
+        this.createItems(menu, rentingEstate, getSection(), "items", "clickable-items");
+        if (rentingEstate.hasNoExtend()) {
+            ItemStack item = this.createItem(this.getSection().getConfigurationSection("noextend-item"));
+            if (item == null) item = this.createNoExtendFallbackItem();
+            menu.setItem(this.getSection().getInt("clickable-items.cycle.slot"), item);
+        }
         menu.openInventory(player, inv -> guiPlayer.setDontReady(false));
+    }
+
+    private void sendCannotExtend(Player player) {
+        Utils.sendMessage(player, Configuration.getString(
+                Configuration.getConfig(),
+                "lang.noextend-cannot-extend",
+                "&cThis rent cannot be extended."
+        ));
     }
 }
