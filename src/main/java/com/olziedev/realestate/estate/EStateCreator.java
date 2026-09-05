@@ -1,6 +1,8 @@
 package com.olziedev.realestate.estate;
 
 import com.olziedev.realestate.RealEstate;
+import com.olziedev.realestate.estate.rent.ExclusiveRule;
+import com.olziedev.realestate.estate.rent.OfflineRule;
 import com.olziedev.realestate.estate.rent.RentFlags;
 import com.olziedev.realestate.estate.rent.NoExtendRule;
 import com.olziedev.realestate.estate.rent.RentingEstate;
@@ -25,6 +27,8 @@ public class EStateCreator {
     private long price;
     private List<RentFlags> rentFlags;
     private NoExtendRule noExtendRule;
+    private OfflineRule offlineRule;
+    private ExclusiveRule exclusiveRule;
     private String rentFlagError;
     private final Player player;
 
@@ -53,10 +57,36 @@ public class EStateCreator {
 
     public void setRentFlags(String rentFlags) {
         this.rentFlags = RentFlags.getByTag(rentFlags);
+
+        if (ExclusiveRule.isRequested(rentFlags, RentFlags.EXCLUSIVE.getTag())) {
+            if (!this.player.hasPermission("realestate.create.exclusive")) {
+                this.rentFlagError = "lang.exclusive-create-denied";
+                return;
+            }
+
+            this.exclusiveRule = ExclusiveRule.parse(rentFlags, RentFlags.EXCLUSIVE.getTag());
+            if (this.exclusiveRule == null) {
+                this.rentFlagError = "lang.invalid-exclusive";
+                return;
+            }
+        }
+
+        if (OfflineRule.isRequested(rentFlags, RentFlags.OFFLINE.getTag())) {
+            if (!this.player.hasPermission("realestate.create.offline")) {
+                this.rentFlagError = "lang.offline-create-denied";
+                return;
+            }
+
+            this.offlineRule = OfflineRule.parse(rentFlags, RentFlags.OFFLINE.getTag());
+            if (this.offlineRule == null) {
+                this.rentFlagError = "lang.invalid-offline";
+                return;
+            }
+        }
+
         if (!NoExtendRule.isRequested(rentFlags, RentFlags.NOEXTEND.getTag())) return;
 
-        if (!this.player.hasPermission("realestate.noextend.create")
-                || !this.player.hasPermission("realestate.noextend.bypass")) {
+        if (!this.player.hasPermission("realestate.create.noextend")) {
             this.rentFlagError = "lang.noextend-create-denied";
             return;
         }
@@ -76,9 +106,20 @@ public class EStateCreator {
 
     public void create(Block block, long claimID, long parentID) {
         if (this.rentFlagError != null) {
-            String fallback = this.rentFlagError.equals("lang.invalid-noextend")
-                    ? "&cInvalid no-extend flag. Use -ne <group> <days>."
-                    : "&cYou do not have permission to create non-extendable rents.";
+            String fallback;
+            if (this.rentFlagError.equals("lang.invalid-noextend")) {
+                fallback = "&cInvalid no-extend flag. Use -ne <group> <days>.";
+            } else if (this.rentFlagError.equals("lang.invalid-offline")) {
+                fallback = "&cInvalid offline flag. Use -offline <days>.";
+            } else if (this.rentFlagError.equals("lang.invalid-exclusive")) {
+                fallback = "&cInvalid exclusive flag. Use -e <group>.";
+            } else if (this.rentFlagError.equals("lang.exclusive-create-denied")) {
+                fallback = "&cYou need realestate.create.exclusive to create exclusive-group rents.";
+            } else if (this.rentFlagError.equals("lang.offline-create-denied")) {
+                fallback = "&cYou need realestate.create.offline to create offline-limited rents.";
+            } else {
+                fallback = "&cYou need realestate.create.noextend to create non-extendable rents.";
+            }
             Utils.sendMessage(player, Configuration.getString(Configuration.getConfig(), this.rentFlagError, fallback));
             return;
         }
@@ -96,8 +137,8 @@ public class EStateCreator {
             Connection con = manager.getConnection();
             if (isRent) {
                 PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO estate_renting(id, parent_id, owner, time, flags, no_extend_group, no_extend_days, price, sign_world, sign_x, sign_y, sign_z) "
-                                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                        "INSERT INTO estate_renting(id, parent_id, owner, time, flags, no_extend_group, no_extend_days, exclusive_group, offline_days, price, sign_world, sign_x, sign_y, sign_z) "
+                                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 );
                 ps.setLong(1, claimID);
                 ps.setLong(2, parentID);
@@ -106,11 +147,14 @@ public class EStateCreator {
                 ps.setString(5, this.rentFlags == null ? null : this.rentFlags.stream().map(RentFlags::name).collect(Collectors.joining(",")));
                 ps.setString(6, this.noExtendRule == null ? null : this.noExtendRule.group());
                 ps.setInt(7, this.noExtendRule == null ? 0 : this.noExtendRule.cooldownDays());
-                ps.setLong(8, this.price);
-                ps.setString(9, location.getWorld().getName());
-                ps.setInt(10, location.getBlockX());
-                ps.setInt(11, location.getBlockY());
-                ps.setInt(12, location.getBlockZ());
+                ps.setString(8, this.exclusiveRule == null ? null : this.exclusiveRule.group());
+                if (this.offlineRule == null) ps.setNull(9, java.sql.Types.INTEGER);
+                else ps.setInt(9, this.offlineRule.days());
+                ps.setLong(10, this.price);
+                ps.setString(11, location.getWorld().getName());
+                ps.setInt(12, location.getBlockX());
+                ps.setInt(13, location.getBlockY());
+                ps.setInt(14, location.getBlockZ());
                 ps.executeUpdate();
             } else {
                 PreparedStatement ps = con.prepareStatement(

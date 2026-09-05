@@ -12,6 +12,14 @@ public enum RentFlags {
     NOEXTEND(
             Configuration.getString(Configuration.getConfig(), "settings.lines-rent-flags.noextend", "-ne"),
             Configuration.getString(Configuration.getConfig(), "settings.lines-rent-flags.noextend-display", "&cNo Extend")
+    ),
+    OFFLINE(
+            Configuration.getString(Configuration.getConfig(), "settings.lines-rent-flags.offline", "-offline"),
+            Configuration.getString(Configuration.getConfig(), "settings.lines-rent-flags.offline-display", "&eOffline Limit")
+    ),
+    EXCLUSIVE(
+            Configuration.getString(Configuration.getConfig(), "settings.lines-rent-flags.exclusive", "-e"),
+            Configuration.getString(Configuration.getConfig(), "settings.lines-rent-flags.exclusive-display", "&6Exclusive Group")
     );
 
     final String tag;

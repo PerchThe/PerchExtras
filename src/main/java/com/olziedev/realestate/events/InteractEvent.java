@@ -5,6 +5,7 @@ import com.olziedev.realestate.addons.GriefPreventionAddon;
 import com.olziedev.realestate.estate.AuctionEstate;
 import com.olziedev.realestate.estate.EState;
 import com.olziedev.realestate.estate.rent.RentFlags;
+import com.olziedev.realestate.estate.rent.RentGroupAccess;
 import com.olziedev.realestate.estate.rent.RentingEstate;
 import com.olziedev.realestate.managers.MenuManager;
 import com.olziedev.realestate.menus.guis.*;
@@ -85,29 +86,10 @@ public class InteractEvent implements Listener {
             Utils.sendMessage(player, Configuration.getConfig().getString("lang.cannot-buy"));
             return;
         }
-        if (isBlockedByNoExtendGroup(player, rentingEstate)) return;
+        if (RentGroupAccess.denyIfBlocked(player, rentingEstate)) return;
 
         eState.ready = false;
         menuManager.getMenu(RentEstateMenu.class).open(player);
     }
 
-    private boolean isBlockedByNoExtendGroup(Player player, RentingEstate estate) {
-        if (!estate.hasNoExtend() || player.hasPermission("realestate.noextend.bypass")) return false;
-
-        long blockedUntil = estate.getNoExtendBlockedUntil(player.getUniqueId());
-        long now = System.currentTimeMillis();
-        if (blockedUntil <= now) return false;
-
-        long remaining = blockedUntil - now;
-        long seconds = Math.max(1L, remaining / 1000L + (remaining % 1000L == 0 ? 0 : 1));
-        String message = Configuration.getString(
-                Configuration.getConfig(),
-                "lang.noextend-blocked",
-                "&cYou cannot rent another estate in group %group% for %time%."
-        );
-        Utils.sendMessage(player, message
-                .replace("%group%", estate.getNoExtendGroup())
-                .replace("%time%", Utils.formatTime(seconds)));
-        return true;
-    }
 }

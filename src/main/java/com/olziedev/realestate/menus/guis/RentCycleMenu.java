@@ -7,6 +7,7 @@ import com.olziedev.realestate.addons.ProtocolLibAddon;
 import com.olziedev.realestate.addons.VaultAddon;
 import com.olziedev.realestate.estate.EState;
 import com.olziedev.realestate.estate.rent.RentFlags;
+import com.olziedev.realestate.estate.rent.RentGroupAccess;
 import com.olziedev.realestate.estate.rent.RentingEstate;
 import com.olziedev.realestate.managers.Manager;
 import com.olziedev.realestate.menus.Menu;
@@ -35,7 +36,7 @@ public class RentCycleMenu extends Menu {
 
             ConfigurationSection section = this.getSection().getConfigurationSection("clickable-items");
             if (event.getSlot() == section.getInt("rent.slot", -1)) {
-                if (this.isBlockedByNoExtendGroup(player, eState)) return true;
+                if (RentGroupAccess.denyIfBlocked(player, eState)) return true;
                 if (!eState.setPaidPrice(1, player.getUniqueId())) return true;
 
                 if (eState.getRentFlags().contains(RentFlags.RENEW)) {
@@ -91,7 +92,9 @@ public class RentCycleMenu extends Menu {
             }
             return true;
         }, () -> {
-            if (guiPlayer.getAmount() == null || !eState.setPaidPrice(guiPlayer.getAmount(), guiPlayer.getUUID())) return;
+            if (guiPlayer.getAmount() == null) return;
+            if (newRenter && RentGroupAccess.denyIfBlocked(guiPlayer.getPlayer(), eState)) return;
+            if (!eState.setPaidPrice(guiPlayer.getAmount(), guiPlayer.getUUID())) return;
 
             if (newRenter) {
                 if (eState.getRentFlags().contains(RentFlags.RENEW)) {
@@ -132,26 +135,6 @@ public class RentCycleMenu extends Menu {
             menu.setItem(this.getSection().getInt("clickable-items.cycle.slot"), item);
         }
         menu.openInventory(player, inv -> guiPlayer.setDontReady(false));
-    }
-
-    private boolean isBlockedByNoExtendGroup(Player player, RentingEstate estate) {
-        if (!estate.hasNoExtend() || player.hasPermission("realestate.noextend.bypass")) return false;
-
-        long blockedUntil = estate.getNoExtendBlockedUntil(player.getUniqueId());
-        long now = System.currentTimeMillis();
-        if (blockedUntil <= now) return false;
-
-        long remaining = blockedUntil - now;
-        long seconds = Math.max(1L, remaining / 1000L + (remaining % 1000L == 0 ? 0 : 1));
-        String message = Configuration.getString(
-                Configuration.getConfig(),
-                "lang.noextend-blocked",
-                "&cYou cannot rent another estate in group %group% for %time%."
-        );
-        Utils.sendMessage(player, message
-                .replace("%group%", estate.getNoExtendGroup())
-                .replace("%time%", Utils.formatTime(seconds)));
-        return true;
     }
 
     private void sendCannotExtend(Player player) {

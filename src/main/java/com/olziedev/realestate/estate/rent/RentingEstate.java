@@ -35,6 +35,8 @@ public class RentingEstate extends EState {
     private List<RentFlags> activatedFlags;
     private String noExtendGroup;
     private int noExtendDays;
+    private Integer offlineDays;
+    private String exclusiveGroup;
 
     public RentingEstate(long claimID, long childClaimID) {
         super(claimID, childClaimID);
@@ -55,6 +57,9 @@ public class RentingEstate extends EState {
                 this.activatedFlags = RentFlags.parse(result.getString("activated_flags"));
                 this.noExtendGroup = result.getString("no_extend_group");
                 this.noExtendDays = result.getInt("no_extend_days");
+                this.exclusiveGroup = result.getString("exclusive_group");
+                int loadedOfflineDays = result.getInt("offline_days");
+                this.offlineDays = result.wasNull() ? null : loadedOfflineDays;
             }
             this.trustPlayer();
         } catch (Exception ex) {
@@ -326,6 +331,41 @@ public class RentingEstate extends EState {
 
     public int getNoExtendDays() {
         return this.noExtendDays;
+    }
+
+    public boolean hasOfflineLimit() {
+        return this.rentFlags.contains(RentFlags.OFFLINE) && this.offlineDays != null;
+    }
+
+    public int getOfflineDays() {
+        return this.offlineDays == null ? 0 : this.offlineDays;
+    }
+
+    public boolean hasExclusive() {
+        return this.rentFlags.contains(RentFlags.EXCLUSIVE)
+                && this.exclusiveGroup != null
+                && !this.exclusiveGroup.isBlank();
+    }
+
+    public String getExclusiveGroup() {
+        return this.exclusiveGroup;
+    }
+
+    public boolean isInRentGroup(String group) {
+        return group != null && ((this.hasNoExtend() && group.equalsIgnoreCase(this.noExtendGroup))
+                || (this.hasExclusive() && group.equalsIgnoreCase(this.exclusiveGroup)));
+    }
+
+    public boolean isRenterOfflineTooLong(long now) {
+        if (!this.hasOfflineLimit() || this.renter == null) return false;
+
+        OfflinePlayer player = Bukkit.getOfflinePlayer(this.renter);
+        if (player.isOnline()) return false;
+        if (RealEstate.getAddonManager().getAddon(VaultAddon.class).hasPermission(player, "realestate.bypass.offline")) return false;
+
+        long lastSeen = player.getLastSeen();
+        if (lastSeen <= 0L || now < lastSeen) return false;
+        return now - lastSeen >= this.getOfflineDays() * 86_400_000L;
     }
 
     public long getNoExtendBlockedUntil(UUID player) {
