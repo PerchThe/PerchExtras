@@ -94,7 +94,7 @@ public class Openblockedcontainers extends SpotPlugin implements Listener {
         if (isShulker) {
             if (block.getBlockData() instanceof Directional) {
                 Directional dir = (Directional) block.getBlockData();
-                return block.getRelative(dir.getFacing()).getType().isSolid();
+                return !block.getRelative(dir.getFacing()).isPassable();
             }
             return false;
         }
