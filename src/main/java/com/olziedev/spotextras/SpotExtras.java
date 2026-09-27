@@ -5,6 +5,7 @@ import com.olziedev.armorstandcmd.ArmorStandCmd;
 import com.olziedev.bulkmapart.BulkMapart;
 import com.olziedev.potion.Potion;
 import com.olziedev.realestate.RealEstate;
+import com.olziedev.safelogin.SafeLoginListener;
 import com.olziedev.spotextras.api.SpotPlugin;
 
 import com.olziedev.lapis.LapisListener;
@@ -36,6 +37,8 @@ public class SpotExtras extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        SafeLoginListener safeLoginListener = new SafeLoginListener(this);
+        getServer().getPluginManager().registerEvents(safeLoginListener, this);
 
         this.lapisKey = new NamespacedKey(this, "stored_lapis");
 
