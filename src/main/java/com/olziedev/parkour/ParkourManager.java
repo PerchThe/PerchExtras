@@ -251,7 +251,7 @@ public class ParkourManager {
         persist(player.getUniqueId());
         restoreAbilities(player, current.hadFlight());
         completeBossBar(player, course, time);
-        Messages.send(player, "completed", "parkour", course.getName(), "time", formatTime(time));
+        Messages.sendGlobal(player, "completed", "player", player.getName(), "parkour", course.getName(), "time", formatTime(time));
 
         for (String command : course.getEndCommands()) {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), applyPlaceholders(player, course.getName(), command));

@@ -49,8 +49,10 @@ public class RestrictionListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         if (!manager.isDoingParkour(player.getUniqueId())) return;
 
+        // Just cancel the damage - never reset on a fall. Valid platforms can be several blocks
+        // down, so fall damage isn't a reliable "failure" signal. Failures are detected via
+        // fail blocks (e.g. water) under the course by the tick sweep instead.
         event.setCancelled(true);
-        manager.resetToCheckpointSilently(player);
     }
 
     @EventHandler(ignoreCancelled = true)
