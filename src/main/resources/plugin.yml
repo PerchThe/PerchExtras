@@ -65,4 +65,4 @@ commands:
     permission-message: §cYou do not have permission to use this command.
   parkour:
     description: Play or manage parkour courses.
-    usage: /parkour <reset|stop|reload|create|delete|add|remove|checkpoints|reorder|endcmd>
+    usage: /parkour <reset|stop|leaderboard|pb|reload|create|delete|add|remove|checkpoints|reorder|endcmd>
