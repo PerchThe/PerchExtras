@@ -77,16 +77,6 @@ public final class Messages {
         sender.sendMessage(parse(raw, replacements));
     }
 
-    /** Sends settings.messages.<key> to all online players, skipping blank messages. */
-    public static void sendGlobal(CommandSender sender, String key, String... replacements) {
-        String raw = Configuration.getConfig().getString("settings.messages." + key, "");
-        if (raw.isEmpty()) return;
-        Component message = parse(raw, replacements);
-        for (CommandSender player : sender.getServer().getOnlinePlayers()) {
-            player.sendMessage(message);
-        }
-    }
-
     /** Converts legacy & codes and &#AABBCC hex into MiniMessage tags. */
     private static String convertLegacy(String input) {
         // &#RRGGBB -> <#RRGGBB>
