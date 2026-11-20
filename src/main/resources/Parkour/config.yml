@@ -16,7 +16,7 @@ settings:
     - top
   messages:
     prefix: "&8[<gradient:#48ab76:#7db597>Parkour</gradient>&8] &7"
-    started: "&#48ab76Started parkour &#7db597%parkour%&#48ab76! &7Flight, jump commands and elytra are disabled until you finish or &#7db597/parkour stop&7. If you fall, use &#7db597/parkour reset&7."
+    started: "&#48ab76Started parkour &#7db597%parkour%&#48ab76! &7Flight, jump commands and elytra are disabled until you finish or &#7db597/parkour stop&7. Use &#7db597/parkour restart&7 to go back to your previous checkpoint."
     checkpoint: "&#48ab76Checkpoint &#7db597%stage%&#48ab76 reached!"
     bossbar: "&#48ab76%parkour% &8» &#7db597%time%"
     completed: "&#7db597%player% <gradient:#48ab76:#7db597>completed the parkour</gradient> &#7db597%parkour%&#48ab76 in &#7db597%time%&#48ab76!"

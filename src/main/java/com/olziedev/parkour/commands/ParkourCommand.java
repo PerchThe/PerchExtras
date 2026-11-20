@@ -25,7 +25,7 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
 
     private static final String ADMIN_PERMISSION = "evergreen.parkour.admin";
 
-    private static final List<String> PLAYER_SUBS = Arrays.asList("reset", "stop", "leaderboard", "pb");
+    private static final List<String> PLAYER_SUBS = Arrays.asList("restart", "reset", "stop", "leaderboard", "pb");
     private static final List<String> ADMIN_SUBS =
             Arrays.asList("reload", "create", "delete", "add", "remove", "checkpoints", "reorder", "endcmd");
     private static final List<String> TYPES = Arrays.asList("start", "checkpoint", "end");
@@ -46,7 +46,7 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
 
         String sub = args[0].toLowerCase(Locale.ROOT);
         switch (sub) {
-            case "reset" -> {
+            case "reset", "restart" -> {
                 if (requirePlayer(sender)) manager.reset((Player) sender);
             }
             case "stop" -> {
@@ -336,7 +336,7 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         send(sender, "&#48ab76&lParkour commands:");
-        send(sender, "&#7db597/parkour reset &7- teleport back to your last checkpoint");
+        send(sender, "&#7db597/parkour restart &7- teleport back to your last checkpoint");
         send(sender, "&#7db597/parkour stop &7- stop your parkour and restore abilities");
         send(sender, "&#7db597/parkour leaderboard <name> &7- view a course's top 10 times");
         send(sender, "&#7db597/parkour pb <name> &7- view your personal best on a course");
