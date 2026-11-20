@@ -1,5 +1,6 @@
 package com.olziedev.parkour;
 
+import com.olziedev.parkour.model.LeaderboardEntry;
 import com.olziedev.parkour.model.ParkourCourse;
 import com.olziedev.parkour.model.ParkourPoint;
 import com.olziedev.parkour.model.ParkourType;
@@ -27,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -251,7 +253,8 @@ public class ParkourManager {
         persist(player.getUniqueId());
         restoreAbilities(player, current.hadFlight());
         completeBossBar(player, course, time);
-        Messages.send(player, "completed", "parkour", course.getName(), "time", formatTime(time));
+        recordTime(course, player, time);
+        Messages.sendGlobal(player, "completed", "player", player.getName(), "parkour", course.getName(), "time", formatTime(time));
 
         for (String command : course.getEndCommands()) {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), applyPlaceholders(player, course.getName(), command));
@@ -438,7 +441,7 @@ public class ParkourManager {
         removeBossBar(player);
     }
 
-    private String formatTime(long millis) {
+    public String formatTime(long millis) {
         long totalSeconds = millis / 1000;
         long hours = totalSeconds / 3600;
         long minutes = (totalSeconds % 3600) / 60;
@@ -448,6 +451,27 @@ public class ParkourManager {
             return String.format("%d:%02d:%02d.%03d", hours, minutes, seconds, ms);
         }
         return String.format("%d:%02d.%03d", minutes, seconds, ms);
+    }
+
+    public void recordTime(ParkourCourse course, Player player, long timeMillis) {
+        Map<UUID, LeaderboardEntry> records = course.getRecords();
+        LeaderboardEntry existing = records.get(player.getUniqueId());
+        if (existing != null && timeMillis >= existing.getTimeMillis()) return; // not a personal best
+
+        records.put(player.getUniqueId(), new LeaderboardEntry(player.getUniqueId(), player.getName(), timeMillis));
+        saveCourses();
+        Messages.send(player, "personal-best", "player", player.getName(),
+                "parkour", course.getName(), "time", formatTime(timeMillis));
+    }
+
+    public LeaderboardEntry getPersonalBest(ParkourCourse course, UUID uuid) {
+        return course.getRecords().get(uuid);
+    }
+
+    public List<LeaderboardEntry> getTopTimes(ParkourCourse course, int limit) {
+        List<LeaderboardEntry> sorted = new ArrayList<>(course.getRecords().values());
+        sorted.sort(Comparator.comparingLong(LeaderboardEntry::getTimeMillis));
+        return sorted.size() > limit ? sorted.subList(0, limit) : sorted;
     }
 
     private void applyRestrictions(Player player) {

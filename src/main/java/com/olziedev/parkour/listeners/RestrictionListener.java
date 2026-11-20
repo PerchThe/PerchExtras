@@ -50,7 +50,6 @@ public class RestrictionListener implements Listener {
         if (!manager.isDoingParkour(player.getUniqueId())) return;
 
         event.setCancelled(true);
-        manager.resetToCheckpointSilently(player);
     }
 
     @EventHandler(ignoreCancelled = true)

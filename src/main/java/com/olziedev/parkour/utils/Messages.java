@@ -70,14 +70,24 @@ public final class Messages {
         return get("prefix").append(get(key, replacements));
     }
 
-    /** Sends settings.messages.&lt;key&gt; to the sender, skipping blank messages. */
+    /** Sends settings.messages.<key> to the sender, skipping blank messages. */
     public static void send(CommandSender sender, String key, String... replacements) {
         String raw = Configuration.getConfig().getString("settings.messages." + key, "");
         if (raw.isEmpty()) return;
         sender.sendMessage(parse(raw, replacements));
     }
 
-    /** Converts legacy &amp; codes and &amp;#AABBCC hex into MiniMessage tags. */
+    /** Sends settings.messages.<key> to all online players, skipping blank messages. */
+    public static void sendGlobal(CommandSender sender, String key, String... replacements) {
+        String raw = Configuration.getConfig().getString("settings.messages." + key, "");
+        if (raw.isEmpty()) return;
+        Component message = parse(raw, replacements);
+        for (CommandSender player : sender.getServer().getOnlinePlayers()) {
+            player.sendMessage(message);
+        }
+    }
+
+    /** Converts legacy & codes and &#AABBCC hex into MiniMessage tags. */
     private static String convertLegacy(String input) {
         // &#RRGGBB -> <#RRGGBB>
         Matcher matcher = HEX.matcher(input);

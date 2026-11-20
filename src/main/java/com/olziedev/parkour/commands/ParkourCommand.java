@@ -2,6 +2,7 @@ package com.olziedev.parkour.commands;
 
 import com.olziedev.parkour.Parkour;
 import com.olziedev.parkour.ParkourManager;
+import com.olziedev.parkour.model.LeaderboardEntry;
 import com.olziedev.parkour.model.ParkourCourse;
 import com.olziedev.parkour.model.ParkourPoint;
 import com.olziedev.parkour.model.ParkourType;
@@ -24,7 +25,7 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
 
     private static final String ADMIN_PERMISSION = "evergreen.parkour.admin";
 
-    private static final List<String> PLAYER_SUBS = Arrays.asList("reset", "stop");
+    private static final List<String> PLAYER_SUBS = Arrays.asList("reset", "stop", "leaderboard", "pb");
     private static final List<String> ADMIN_SUBS =
             Arrays.asList("reload", "create", "delete", "add", "remove", "checkpoints", "reorder", "endcmd");
     private static final List<String> TYPES = Arrays.asList("start", "checkpoint", "end");
@@ -51,6 +52,8 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
             case "stop" -> {
                 if (requirePlayer(sender)) manager.stop((Player) sender);
             }
+            case "leaderboard", "lb" -> handleLeaderboard(sender, args);
+            case "pb" -> handlePb(sender, args);
             case "reload", "create", "delete", "add", "remove", "checkpoints", "reorder", "endcmd" -> {
                 if (!sender.hasPermission(ADMIN_PERMISSION)) {
                     send(sender, "&cYou don't have permission to use that (" + ADMIN_PERMISSION + ").");
@@ -285,10 +288,58 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Messages.get("prefix").append(Messages.parse(message)));
     }
 
+    private void handleLeaderboard(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            send(sender, "&cUsage: /parkour leaderboard <name>");
+            return;
+        }
+        ParkourCourse course = manager.getCourse(args[1]);
+        if (course == null) {
+            send(sender, "&cNo parkour named &#7db597" + args[1] + "&c.");
+            return;
+        }
+        List<LeaderboardEntry> board = manager.getTopTimes(course, 10);
+        if (board.isEmpty()) {
+            sender.sendMessage(Messages.prefixed("leaderboard-empty", "parkour", course.getName()));
+            return;
+        }
+        sender.sendMessage(Messages.prefixed("leaderboard-header", "parkour", course.getName()));
+        for (int i = 0; i < board.size(); i++) {
+            LeaderboardEntry entry = board.get(i);
+            sender.sendMessage(Messages.get("leaderboard-entry",
+                    "rank", String.valueOf(i + 1),
+                    "player", entry.getName(),
+                    "time", manager.formatTime(entry.getTimeMillis())));
+        }
+    }
+
+    private void handlePb(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            send(sender, "&cUsage: /parkour pb <name>");
+            return;
+        }
+        if (!requirePlayer(sender)) return;
+        Player player = (Player) sender;
+        ParkourCourse course = manager.getCourse(args[1]);
+        if (course == null) {
+            send(sender, "&cNo parkour named &#7db597" + args[1] + "&c.");
+            return;
+        }
+        LeaderboardEntry best = manager.getPersonalBest(course, player.getUniqueId());
+        if (best == null) {
+            sender.sendMessage(Messages.prefixed("pb-none", "parkour", course.getName()));
+            return;
+        }
+        sender.sendMessage(Messages.prefixed("pb", "parkour", course.getName(),
+                "time", manager.formatTime(best.getTimeMillis())));
+    }
+
     private void sendHelp(CommandSender sender) {
         send(sender, "&#48ab76&lParkour commands:");
         send(sender, "&#7db597/parkour reset &7- teleport back to your last checkpoint");
         send(sender, "&#7db597/parkour stop &7- stop your parkour and restore abilities");
+        send(sender, "&#7db597/parkour leaderboard <name> &7- view a course's top 10 times");
+        send(sender, "&#7db597/parkour pb <name> &7- view your personal best on a course");
         if (sender.hasPermission(ADMIN_PERMISSION)) {
             send(sender, "&#7db597/parkour reload &7- reload config.yml and courses.yml");
             send(sender, "&#7db597/parkour create <name> &7- create a course");
@@ -313,6 +364,8 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
 
         String sub = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
+            // Course names for the leaderboard - available to everyone.
+            if (sub.equals("leaderboard") || sub.equals("lb") || sub.equals("pb")) return filter(manager.getCourseNames(), args[1]);
             if (admin && (sub.equals("add") || sub.equals("remove"))) return filter(TYPES, args[1]);
             if (admin && sub.equals("endcmd")) return filter(ENDCMD_ACTIONS, args[1]);
             if (admin && (sub.equals("delete") || sub.equals("checkpoints") || sub.equals("reorder"))) return filter(manager.getCourseNames(), args[1]);
