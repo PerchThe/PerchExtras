@@ -236,7 +236,7 @@ public class ParkourManager {
     private void handleCheckpoint(Player player, ParkourCourse course, int index) {
         PlayerProgress current = progress.get(player.getUniqueId());
         if (current == null || !current.getParkourName().equalsIgnoreCase(course.getName())) return;
-        if (index <= current.getCheckpointIndex()) return;
+        if (index != current.getCheckpointIndex() + 1) return;
 
         current.setCheckpointIndex(index);
         persist(player.getUniqueId());
@@ -247,6 +247,7 @@ public class ParkourManager {
     private void handleEnd(Player player, ParkourCourse course) {
         PlayerProgress current = progress.get(player.getUniqueId());
         if (current == null || !current.getParkourName().equalsIgnoreCase(course.getName())) return;
+        if (current.getCheckpointIndex() < course.getCheckpoints().size() - 1) return;
 
         long time = current.getElapsed(System.currentTimeMillis());
         progress.remove(player.getUniqueId());
