@@ -41,25 +41,30 @@ public class Invisibleitemframes extends SpotPlugin implements Listener {
 
     // Changed to LOW and removed ignoreCancelled so we catch the click
     // BEFORE claim plugins mistakenly block the entity interaction.
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onFrameInteract(PlayerInteractEntityEvent event) {
         if (!(event.getRightClicked() instanceof ItemFrame)) return;
 
         ItemFrame frame = (ItemFrame) event.getRightClicked();
         boolean isSneaking = event.getPlayer().isSneaking();
-        // .isAir() is safer for modern versions than checking != Material.AIR
         boolean hasItem = !frame.getItem().getType().isAir();
         boolean isVisible = frame.isVisible();
 
         // SCENARIO 1: The frame is INVISIBLE
         if (!isVisible) {
-            event.setCancelled(true); // Stop vanilla rotation/claim plugin interference
+            if (isSneaking) {
+                // Respect GriefPrevention / claim plugins when trying to un-invisible the frame
+                if (event.isCancelled()) return;
 
-            if (event.getHand() == EquipmentSlot.HAND) {
-                if (isSneaking) {
-                    frame.setVisible(true); // Un-invisible it
-                } else {
-                    openContainerBehind(frame, event.getPlayer()); // Open the container
+                event.setCancelled(true);
+                if (event.getHand() == EquipmentSlot.HAND) {
+                    frame.setVisible(true);
+                }
+            } else {
+                // Normal right-click: cancel frame rotation and let dummyInteract check container trust on the block
+                event.setCancelled(true);
+                if (event.getHand() == EquipmentSlot.HAND) {
+                    openContainerBehind(frame, event.getPlayer());
                 }
             }
             return;
@@ -67,16 +72,15 @@ public class Invisibleitemframes extends SpotPlugin implements Listener {
 
         // SCENARIO 2: The frame is VISIBLE
         if (isVisible && isSneaking) {
+            // Respect GriefPrevention / claim plugins when trying to make the frame invisible
+            if (event.isCancelled()) return;
+
             if (hasItem) {
-                // If it HAS an item, make it invisible
                 event.setCancelled(true);
                 if (event.getHand() == EquipmentSlot.HAND) {
                     frame.setVisible(false);
                 }
             }
-            // If it DOES NOT have an item, it just skips this block entirely.
-            // Vanilla behavior takes over, which perfectly prevents them from
-            // making an empty frame invisible without throwing any ugly errors!
         }
     }
 

@@ -7,6 +7,7 @@ import com.olziedev.potion.Potion;
 import com.olziedev.realestate.RealEstate;
 import com.olziedev.safelogin.SafeLoginListener;
 import com.olziedev.spotextras.api.SpotPlugin;
+import com.olziedev.letsseeifplaytimeiscountingproperly.letsseeifplaytimeiscountingproperly;
 
 import com.olziedev.lapis.LapisListener;
 import com.olziedev.runcommandall.RunAllCommand;
@@ -65,7 +66,8 @@ public class SpotExtras extends JavaPlugin {
                 new Invisibleitemframes(),
                 new Openblockedcontainers(),
                 new Preventplayersfromdestroyingtheirseeb(),
-                new Preventplayersfromgrabbingtoomanyelytras()
+                new Preventplayersfromgrabbingtoomanyelytras(),
+                new letsseeifplaytimeiscountingproperly()
         ));
 
         for (SpotPlugin plugin : plugins) {

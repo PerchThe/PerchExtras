@@ -48,6 +48,8 @@ depend:
   - Essentials
   - Vault
   - GriefPrevention
+  - PlaceholderAPI
+  - JetsAntiAFKPro
 commands:
   bulkmapart:
     description: Duplicate the map-art container held in your main hand.
@@ -62,6 +64,12 @@ commands:
     usage: /armorstandcommand <addcmd|clear|info|edit|reload|config>
     aliases: [armorstandcmd, ascmd]
     permission: evergreen.armorstandcmd
+    permission-message: §cYou do not have permission to use this command.
+  playtimeaudit:
+    description: Inspect JetsAntiAFKPro playtime audit logs and export CSVs.
+    usage: /<command> <patterns|anomalies|check|live|stats|export>
+    aliases: [ ptaudit, pta ]
+    permission: perchextras.playtimeaudit
     permission-message: §cYou do not have permission to use this command.
   parkour:
     description: Play or manage parkour courses.
