@@ -63,6 +63,10 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
     private static final String PH_SESSION_MINUTES = "%jetsantiafkpro_session_timeplayed_minutes%";
     private static final String PH_SESSION_SECONDS = "%jetsantiafkpro_session_timeplayed_seconds%";
 
+    // Matches JetsAntiAFKPro config.yml (afk_stop_counting_playtime: 300, afk_placeholder: "ᶻᶻᶻ")
+    private static final long AFK_STOP_COUNTING_SECONDS = 300L;
+    private static final String JETS_AFK_PLACEHOLDER = "\u1dbb\u1dbb\u1dbb"; // ᶻᶻᶻ
+
     private static final long JOIN_DELAY_TICKS = 100L;          // 5s delay so Jets finishes async DB load
     private static final long JOIN_VERIFY_DELAY_TICKS = 200L;   // +10s follow-up if JOIN looks anomalous
     private static final long SAMPLE_INTERVAL_TICKS = 6000L;    // Every 5 minutes (matches Jets auto-save)
@@ -529,7 +533,7 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
 
             String sampleSql = """
                     SELECT recorded_at, player_name, trigger_type, jets_seconds, jets_raw,
-                           jets_session_seconds, jets_afk_seconds, vanilla_seconds,
+                           jets_session_seconds, jets_afk_seconds, jets_is_afk_raw, vanilla_seconds,
                            delta_jets, delta_session, delta_vanilla
                     FROM playtime_samples
                     WHERE LOWER(player_name) = LOWER(?)
@@ -552,12 +556,14 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
                         String raw = rs.getString("jets_raw");
                         Long sess = getNullableLong(rs, "jets_session_seconds");
                         Long afk = getNullableLong(rs, "jets_afk_seconds");
+                        String isAfkRaw = rs.getString("jets_is_afk_raw");
                         long vanilla = rs.getLong("vanilla_seconds");
                         Long dJets = getNullableLong(rs, "delta_jets");
                         Long dVanilla = getNullableLong(rs, "delta_vanilla");
 
+                        boolean wasAfk = isPlayerAfk(afk, isAfkRaw);
                         NamedTextColor deltaColor = (dJets != null && dJets < 0) ? NamedTextColor.RED
-                                : (dJets != null && dJets == 0 && dVanilla != null && dVanilla >= STALL_MIN_VANILLA_DELTA)
+                                : (dJets != null && dJets == 0 && dVanilla != null && dVanilla >= STALL_MIN_VANILLA_DELTA && !wasAfk)
                                 ? NamedTextColor.YELLOW
                                 : NamedTextColor.GREEN;
 
@@ -575,8 +581,11 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
 
                         line = line.append(Component.text(" | Van: " + formatDuration(vanilla) + " (" + formatSignedDelta(dVanilla) + ")", NamedTextColor.GRAY));
 
-                        if (afk != null && afk > 0) {
-                            line = line.append(Component.text(" [AFK " + formatDuration(afk) + "]", NamedTextColor.GOLD));
+                        if (wasAfk) {
+                            String afkTag = (afk != null && afk > 0)
+                                    ? " [AFK " + formatDuration(afk) + "]"
+                                    : " [AFK]";
+                            line = line.append(Component.text(afkTag, NamedTextColor.GOLD));
                         }
 
                         rows.add(line);
@@ -636,6 +645,7 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
         Long afkSec = parseLongOrNull(rawAfkSec);
         long vanillaSec = target.getStatistic(Statistic.PLAY_ONE_MINUTE) / 20L;
         PlayerState prev = lastKnown.get(target.getUniqueId());
+        boolean isAfk = isPlayerAfk(afkSec, rawIsAfk);
 
         sender.sendMessage(Component.text("=== Live Readout: " + target.getName() + " ===", NamedTextColor.GOLD, TextDecoration.BOLD));
         sender.sendMessage(Component.text("Jets Total: ", NamedTextColor.GRAY)
@@ -646,7 +656,8 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
         sender.sendMessage(Component.text("Vanilla Total: ", NamedTextColor.GRAY)
                 .append(Component.text(formatDuration(vanillaSec) + " (" + vanillaSec + "s)", NamedTextColor.WHITE)));
         sender.sendMessage(Component.text("AFK Status: ", NamedTextColor.GRAY)
-                .append(Component.text("isAfk='" + rawIsAfk + "' | afkSeconds=" + (afkSec != null ? afkSec : rawAfkSec), NamedTextColor.YELLOW)));
+                .append(Component.text(isAfk ? "AFK (playtime paused)" : "Active", isAfk ? NamedTextColor.GOLD : NamedTextColor.GREEN))
+                .append(Component.text(" | afkSeconds=" + (afkSec != null ? afkSec : rawAfkSec) + " | isAfk='" + rawIsAfk + "'", NamedTextColor.YELLOW)));
 
         if (prev != null && prev.jetsSeconds != null) {
             String ago = formatDuration((System.currentTimeMillis() - prev.recordedAt) / 1000L);
@@ -969,7 +980,7 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
                 ? (c.recordedAt - prev.recordedAt) / 1000L
                 : null;
 
-        boolean notAfk = (c.afkSeconds == null || c.afkSeconds == 0L);
+        boolean notAfk = !isPlayerAfk(c.afkSeconds, c.isAfkRaw);
         boolean stalledThisTick = prev != null
                 && prev.inSession
                 && "PERIODIC".equals(c.trigger)
@@ -1154,11 +1165,10 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
             );
         }
 
-        // 3. Pure Jets-to-Jets internal check: Jets session timer gained 4+ mins, but Jets total gained 0
-        if (prev.inSession
-                && "PERIODIC".equals(c.trigger)
-                && deltaSession != null && deltaSession >= STALL_MIN_VANILLA_DELTA
-                && deltaJets != null && deltaJets == 0L) {
+        // 3. Pure Jets-to-Jets internal check: not AFK for 2 consecutive 5m checks, session moved, total stayed frozen
+        if (stalledThisTick
+                && nextStallStreak >= STALL_CONSECUTIVE_REQUIRED
+                && deltaSession != null && deltaSession >= STALL_MIN_VANILLA_DELTA) {
             return new Anomaly(
                     "JETS_INTERNAL_MISMATCH",
                     prev.jetsSeconds,
@@ -1167,7 +1177,7 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
                     0L,
                     null,
                     null,
-                    "Jets session increased +" + formatDuration(deltaSession) + " but Jets total stayed at " + formatDuration(c.jetsSeconds)
+                    "Not AFK for " + nextStallStreak + "x 5m checks: Jets session +" + formatDuration(deltaSession) + " but Jets total stayed at " + formatDuration(c.jetsSeconds)
             );
         }
 
@@ -1483,6 +1493,31 @@ public class letsseeifplaytimeiscountingproperly extends SpotPlugin
                 sender.sendMessage(msg);
             }
         });
+    }
+
+    private static boolean isPlayerAfk(Long afkSeconds, String rawIsAfk) {
+        if (afkSeconds != null && afkSeconds >= AFK_STOP_COUNTING_SECONDS) {
+            return true;
+        }
+        if (rawIsAfk != null) {
+            String stripped = rawIsAfk
+                    .replaceAll("(?i)[§&][0-9a-fk-or]", "")
+                    .replace("\u200c", "")
+                    .replace("\u200b", "")
+                    .replace("\ufeff", "")
+                    .trim();
+            if (!stripped.isEmpty() && !stripped.startsWith("%")) {
+                if (stripped.contains(JETS_AFK_PLACEHOLDER)) {
+                    return true;
+                }
+                String lower = stripped.toLowerCase(Locale.ROOT);
+                if (lower.equals("true") || lower.equals("yes")
+                        || (lower.contains("afk") && !lower.contains("not"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static NamedTextColor colorForAnomaly(String type) {
